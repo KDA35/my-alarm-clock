@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -67,6 +68,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.myalarm.clock.R
 import com.myalarm.clock.data.Alarm
+import com.myalarm.clock.data.AlarmGroup
 import com.myalarm.clock.data.DayOfWeekMask
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -75,14 +77,19 @@ fun AlarmListScreen(
     onOpenLogs: () -> Unit,
     onCreateAlarm: () -> Unit,
     onEditAlarm: (Long) -> Unit,
+    onShowOnboarding: () -> Unit = {},
     viewModel: AlarmListViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val alarms by viewModel.alarms.collectAsState()
+    val grouped by viewModel.grouped.collectAsState()
     val nextTriggerInfo by viewModel.nextTriggerInfo.collectAsState()
 
     var menuOpen by remember { mutableStateOf(false) }
     var deleteCandidate by remember { mutableStateOf<Alarm?>(null) }
+    var groupAction by remember { mutableStateOf<AlarmGroup?>(null) }
+    var renameTarget by remember { mutableStateOf<AlarmGroup?>(null) }
+    var deleteGroupTarget by remember { mutableStateOf<AlarmGroup?>(null) }
 
     val permissions = rememberPermissionState()
 
@@ -100,6 +107,13 @@ fun AlarmListScreen(
                             onClick = {
                                 menuOpen = false
                                 onOpenLogs()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.menu_onboarding)) },
+                            onClick = {
+                                menuOpen = false
+                                onShowOnboarding()
                             }
                         )
                     }
@@ -141,11 +155,13 @@ fun AlarmListScreen(
             if (alarms.isEmpty()) {
                 EmptyState(modifier = Modifier.weight(1f))
             } else {
-                AlarmList(
-                    alarms = alarms,
+                GroupedAlarmList(
+                    grouped = grouped,
                     onToggle = viewModel::toggleEnabled,
-                    onClick = onEditAlarm,
-                    onLongClick = { alarm -> deleteCandidate = alarm },
+                    onAlarmClick = onEditAlarm,
+                    onAlarmLongClick = { alarm -> deleteCandidate = alarm },
+                    onGroupToggle = viewModel::toggleGroup,
+                    onGroupLongClick = { group -> groupAction = group },
                     contentPadding = PaddingValues(bottom = 96.dp)
                 )
             }
@@ -169,6 +185,90 @@ fun AlarmListScreen(
             },
             dismissButton = {
                 TextButton(onClick = { deleteCandidate = null }) {
+                    Text(stringResource(R.string.alarm_list_cancel))
+                }
+            }
+        )
+    }
+
+    groupAction?.let { group ->
+        AlertDialog(
+            onDismissRequest = { groupAction = null },
+            title = { Text(group.name) },
+            text = {
+                Column {
+                    TextButton(onClick = {
+                        groupAction = null
+                        renameTarget = group
+                    }) {
+                        Text(stringResource(R.string.group_rename))
+                    }
+                    TextButton(onClick = {
+                        groupAction = null
+                        deleteGroupTarget = group
+                    }) {
+                        Text(
+                            stringResource(R.string.group_delete),
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { groupAction = null }) {
+                    Text(stringResource(R.string.alarm_list_cancel))
+                }
+            }
+        )
+    }
+
+    renameTarget?.let { group ->
+        var name by remember(group.id) { mutableStateOf(group.name) }
+        AlertDialog(
+            onDismissRequest = { renameTarget = null },
+            title = { Text(stringResource(R.string.group_rename)) },
+            text = {
+                androidx.compose.material3.OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it.take(40) },
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.renameGroup(group.id, name)
+                    renameTarget = null
+                }) {
+                    Text(stringResource(R.string.edit_save))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { renameTarget = null }) {
+                    Text(stringResource(R.string.alarm_list_cancel))
+                }
+            }
+        )
+    }
+
+    deleteGroupTarget?.let { group ->
+        AlertDialog(
+            onDismissRequest = { deleteGroupTarget = null },
+            title = { Text(stringResource(R.string.group_delete_dialog_title)) },
+            text = { Text(stringResource(R.string.group_delete_dialog_body, group.name)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deleteGroup(group)
+                    deleteGroupTarget = null
+                }) {
+                    Text(
+                        stringResource(R.string.group_delete),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { deleteGroupTarget = null }) {
                     Text(stringResource(R.string.alarm_list_cancel))
                 }
             }
@@ -230,23 +330,93 @@ private fun EmptyState(modifier: Modifier = Modifier) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun AlarmList(
-    alarms: List<Alarm>,
+private fun GroupedAlarmList(
+    grouped: GroupedAlarms,
     onToggle: (Long, Boolean) -> Unit,
-    onClick: (Long) -> Unit,
-    onLongClick: (Alarm) -> Unit,
+    onAlarmClick: (Long) -> Unit,
+    onAlarmLongClick: (Alarm) -> Unit,
+    onGroupToggle: (Long, Boolean) -> Unit,
+    onGroupLongClick: (AlarmGroup) -> Unit,
     contentPadding: PaddingValues
 ) {
     LazyColumn(contentPadding = contentPadding) {
-        items(alarms, key = { it.id }) { alarm ->
-            AlarmListItem(
-                alarm = alarm,
-                onToggle = { onToggle(alarm.id, it) },
-                onClick = { onClick(alarm.id) },
-                onLongClick = { onLongClick(alarm) }
-            )
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        grouped.groups.forEach { section ->
+            item(key = "group-${section.group.id}") {
+                GroupHeader(
+                    group = section.group,
+                    onToggle = { onGroupToggle(section.group.id, it) },
+                    onLongClick = { onGroupLongClick(section.group) }
+                )
+            }
+            items(section.alarms, key = { "alarm-${it.id}" }) { alarm ->
+                AlarmListItem(
+                    alarm = alarm,
+                    onToggle = { onToggle(alarm.id, it) },
+                    onClick = { onAlarmClick(alarm.id) },
+                    onLongClick = { onAlarmLongClick(alarm) },
+                    showGroupAccent = true
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            }
         }
+        if (grouped.ungrouped.isNotEmpty()) {
+            if (grouped.groups.isNotEmpty()) {
+                item(key = "ungrouped-header") { UngroupedHeader() }
+            }
+            items(grouped.ungrouped, key = { "alarm-${it.id}" }) { alarm ->
+                AlarmListItem(
+                    alarm = alarm,
+                    onToggle = { onToggle(alarm.id, it) },
+                    onClick = { onAlarmClick(alarm.id) },
+                    onLongClick = { onAlarmLongClick(alarm) },
+                    showGroupAccent = false
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun GroupHeader(
+    group: AlarmGroup,
+    onToggle: (Boolean) -> Unit,
+    onLongClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+            .combinedClickable(onClick = {}, onLongClick = onLongClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            group.name.uppercase(),
+            modifier = Modifier.weight(1f),
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Switch(checked = group.enabled, onCheckedChange = onToggle)
+    }
+}
+
+@Composable
+private fun UngroupedHeader() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+    ) {
+        Text(
+            stringResource(R.string.group_ungrouped).uppercase(),
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
@@ -256,7 +426,8 @@ private fun AlarmListItem(
     alarm: Alarm,
     onToggle: (Boolean) -> Unit,
     onClick: () -> Unit,
-    onLongClick: () -> Unit
+    onLongClick: () -> Unit,
+    showGroupAccent: Boolean = false
 ) {
     val alpha = if (alarm.enabled) 1f else 0.5f
     Row(
@@ -266,6 +437,15 @@ private fun AlarmListItem(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        if (showGroupAccent) {
+            Box(
+                modifier = Modifier
+                    .width(3.dp)
+                    .height(56.dp)
+                    .background(MaterialTheme.colorScheme.primary)
+            )
+            Spacer(Modifier.width(12.dp))
+        }
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 "%02d:%02d".format(alarm.hour, alarm.minute),

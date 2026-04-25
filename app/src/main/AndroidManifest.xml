@@ -13,6 +13,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.TURN_SCREEN_ON" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <application
         android:name=".MyAlarmApplication"
@@ -55,6 +56,15 @@
         </receiver>
 
         <receiver
+            android:name=".alarm.AlarmActionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.myalarm.clock.NOTIF_SNOOZE" />
+                <action android:name="com.myalarm.clock.NOTIF_DISMISS" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
             android:name=".alarm.BootReceiver"
             android:enabled="true"
             android:exported="true">
@@ -62,7 +72,20 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
             </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".widget.NextAlarmWidget"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_next_alarm_info" />
         </receiver>
 
         <service

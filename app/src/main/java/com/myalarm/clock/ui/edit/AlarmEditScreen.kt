@@ -82,8 +82,12 @@ fun AlarmEditScreen(
     viewModel: AlarmEditViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    val groups by viewModel.groups.collectAsState()
     val context = LocalContext.current
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showVibrationDialog by remember { mutableStateOf(false) }
+    var showGroupDialog by remember { mutableStateOf(false) }
+    var showCreateGroupDialog by remember { mutableStateOf(false) }
 
     val ringtoneLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -160,10 +164,11 @@ fun AlarmEditScreen(
                 onChange = viewModel::setLabel
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            EditSectionRow(
+            SoundSection(
                 title = stringResource(R.string.edit_sound_title),
                 subtitle = ringtoneSubtitle(state.ringtoneUri),
-                onClick = {
+                volume = state.volume,
+                onPickRingtone = {
                     val intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
                         putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALARM)
                         putExtra(
@@ -177,12 +182,15 @@ fun AlarmEditScreen(
                         }
                     }
                     ringtoneLauncher.launch(intent)
-                }
+                },
+                onVolumeChange = viewModel::setVolume
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             VibrationRow(
                 enabled = state.vibrationEnabled,
-                onChange = viewModel::setVibration
+                pattern = state.vibrationPattern,
+                onEnabledChange = viewModel::setVibration,
+                onPickPattern = { showVibrationDialog = true }
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             SnoozeSection(
@@ -191,6 +199,12 @@ fun AlarmEditScreen(
                 onSetEnabled = viewModel::setSnoozeEnabled,
                 onSetInterval = viewModel::setSnoozeInterval,
                 onSetRepeats = viewModel::setSnoozeRepeats
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            GroupRow(
+                groupId = state.groupId,
+                groups = groups,
+                onClick = { showGroupDialog = true }
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             if (viewModel.isEditing) {
@@ -232,6 +246,197 @@ fun AlarmEditScreen(
                     Text(stringResource(R.string.alarm_list_cancel))
                 }
             }
+        )
+    }
+
+    if (showVibrationDialog) {
+        VibrationPatternDialog(
+            current = state.vibrationPattern,
+            onPick = {
+                viewModel.setVibrationPattern(it)
+                previewVibration(context, it)
+                showVibrationDialog = false
+            },
+            onDismiss = { showVibrationDialog = false }
+        )
+    }
+
+    if (showGroupDialog) {
+        GroupPickerDialog(
+            current = state.groupId,
+            groups = groups,
+            onPick = { id ->
+                viewModel.setGroupId(id)
+                showGroupDialog = false
+            },
+            onCreateNew = {
+                showGroupDialog = false
+                showCreateGroupDialog = true
+            },
+            onDismiss = { showGroupDialog = false }
+        )
+    }
+
+    if (showCreateGroupDialog) {
+        CreateGroupDialog(
+            onCreate = { name ->
+                viewModel.createGroup(name) { _ ->
+                    showCreateGroupDialog = false
+                }
+            },
+            onDismiss = { showCreateGroupDialog = false }
+        )
+    }
+}
+
+@Composable
+private fun VibrationPatternDialog(
+    current: String,
+    onPick: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.edit_vibration_title)) },
+        text = {
+            Column {
+                com.myalarm.clock.data.VibrationPattern.ALL.forEach { name ->
+                    val label = vibrationPatternLabel(name)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onPick(name) }
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        androidx.compose.material3.RadioButton(
+                            selected = current == name,
+                            onClick = { onPick(name) }
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(label, fontSize = 15.sp)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.alarm_list_cancel))
+            }
+        }
+    )
+}
+
+@Composable
+private fun GroupPickerDialog(
+    current: Long?,
+    groups: List<com.myalarm.clock.data.AlarmGroup>,
+    onPick: (Long?) -> Unit,
+    onCreateNew: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.edit_group_title)) },
+        text = {
+            Column {
+                GroupPickerRow(
+                    label = stringResource(R.string.edit_group_none),
+                    selected = current == null,
+                    onClick = { onPick(null) }
+                )
+                groups.forEach { g ->
+                    GroupPickerRow(
+                        label = g.name,
+                        selected = current == g.id,
+                        onClick = { onPick(g.id) }
+                    )
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onCreateNew)
+                        .padding(vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        stringResource(R.string.edit_group_create_new),
+                        fontSize = 15.sp,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.alarm_list_cancel))
+            }
+        }
+    )
+}
+
+@Composable
+private fun GroupPickerRow(label: String, selected: Boolean, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        androidx.compose.material3.RadioButton(selected = selected, onClick = onClick)
+        Spacer(Modifier.width(8.dp))
+        Text(label, fontSize = 15.sp)
+    }
+}
+
+@Composable
+private fun CreateGroupDialog(
+    onCreate: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var name by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.edit_group_create_new)) },
+        text = {
+            androidx.compose.material3.OutlinedTextField(
+                value = name,
+                onValueChange = { name = it.take(40) },
+                singleLine = true,
+                placeholder = { Text(stringResource(R.string.edit_group_name_hint)) }
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { if (name.isNotBlank()) onCreate(name) },
+                enabled = name.isNotBlank()
+            ) {
+                Text(stringResource(R.string.edit_save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.alarm_list_cancel))
+            }
+        }
+    )
+}
+
+private fun previewVibration(context: android.content.Context, patternName: String) {
+    runCatching {
+        val vibrator = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            (context.getSystemService(android.content.Context.VIBRATOR_MANAGER_SERVICE) as android.os.VibratorManager).defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            context.getSystemService(android.content.Context.VIBRATOR_SERVICE) as android.os.Vibrator
+        }
+        vibrator.vibrate(
+            android.os.VibrationEffect.createWaveform(
+                com.myalarm.clock.data.VibrationPattern.toLongArray(patternName),
+                -1
+            )
         )
     }
 }
@@ -514,14 +719,23 @@ private fun EditSectionRow(
 }
 
 @Composable
-private fun VibrationRow(enabled: Boolean, onChange: (Boolean) -> Unit) {
+private fun VibrationRow(
+    enabled: Boolean,
+    pattern: String,
+    onEnabledChange: (Boolean) -> Unit,
+    onPickPattern: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.weight(1f)) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .clickable(enabled = enabled, onClick = onPickPattern)
+        ) {
             Text(
                 stringResource(R.string.edit_vibration_title),
                 fontSize = 15.sp,
@@ -530,13 +744,13 @@ private fun VibrationRow(enabled: Boolean, onChange: (Boolean) -> Unit) {
             )
             Spacer(Modifier.height(2.dp))
             Text(
-                if (enabled) stringResource(R.string.edit_vibration_basic)
+                if (enabled) vibrationPatternLabel(pattern)
                 else stringResource(R.string.edit_vibration_off),
                 fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        Switch(checked = enabled, onCheckedChange = onChange)
+        Switch(checked = enabled, onCheckedChange = onEnabledChange)
     }
 }
 
@@ -721,3 +935,99 @@ private fun RepeatsChip(
         )
     }
 }
+
+@Composable
+private fun SoundSection(
+    title: String,
+    subtitle: String,
+    volume: Int,
+    onPickRingtone: () -> Unit,
+    onVolumeChange: (Int) -> Unit
+) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onPickRingtone),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    title,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    subtitle,
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Text(
+                "›",
+                fontSize = 22.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Spacer(Modifier.height(8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Slider(
+                value = volume.toFloat(),
+                onValueChange = { onVolumeChange(it.toInt()) },
+                valueRange = 0f..10f,
+                steps = 9,
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                "$volume / 10",
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun GroupRow(
+    groupId: Long?,
+    groups: List<com.myalarm.clock.data.AlarmGroup>,
+    onClick: () -> Unit
+) {
+    val current = groups.firstOrNull { it.id == groupId }
+    val subtitle = current?.name ?: stringResource(R.string.edit_group_none)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                stringResource(R.string.edit_group_title),
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                subtitle,
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Text("›", fontSize = 22.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun vibrationPatternLabel(pattern: String): String = when (pattern) {
+    com.myalarm.clock.data.VibrationPattern.SHORT -> stringResource(R.string.edit_vibration_pattern_short)
+    com.myalarm.clock.data.VibrationPattern.LONG -> stringResource(R.string.edit_vibration_pattern_long)
+    com.myalarm.clock.data.VibrationPattern.DOUBLE -> stringResource(R.string.edit_vibration_pattern_double)
+    else -> stringResource(R.string.edit_vibration_basic)
+}
+
