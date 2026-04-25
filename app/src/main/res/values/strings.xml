@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MyAlarm</string>
+    <string name="stage_1_placeholder">Этап 1: скелет работает</string>
+</resources>
