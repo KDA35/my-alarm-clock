@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
 import com.myalarm.clock.data.AlarmRepository
 import com.myalarm.clock.ui.theme.MyAlarmTheme
+import com.myalarm.clock.util.AppLogger
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -42,9 +43,11 @@ class AlarmRingingActivity : ComponentActivity() {
 
     @Inject lateinit var repository: AlarmRepository
     @Inject lateinit var scheduler: AlarmScheduler
+    @Inject lateinit var logger: AppLogger
 
     companion object {
         const val EXTRA_ALARM_ID = "alarm_id"
+        private const val TAG = "RingingUI"
     }
 
     private var alarmId: Long = -1L
@@ -61,6 +64,10 @@ class AlarmRingingActivity : ComponentActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         alarmId = intent.getLongExtra(EXTRA_ALARM_ID, -1L)
+        logger.i(
+            TAG,
+            "Ringing activity created, alarmId=$alarmId, isLocked=${isKeyguardLocked()}"
+        )
 
         setContent {
             MyAlarmTheme {
@@ -73,7 +80,11 @@ class AlarmRingingActivity : ComponentActivity() {
         }
     }
 
+    private fun isKeyguardLocked(): Boolean =
+        (getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager).isKeyguardLocked
+
     private fun doSnooze(minutes: Int) {
+        logger.i(TAG, "User snoozed alarm id=$alarmId for $minutes minutes")
         lifecycleScope.launch {
             val alarm = repository.getById(alarmId) ?: return@launch
             scheduler.scheduleSnooze(alarm, minutes)
@@ -83,6 +94,7 @@ class AlarmRingingActivity : ComponentActivity() {
     }
 
     private fun doDismiss() {
+        logger.i(TAG, "User dismissed alarm id=$alarmId")
         stopAlarmService()
         finish()
     }

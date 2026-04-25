@@ -2,19 +2,61 @@
 <resources>
     <string name="app_name">MyAlarm</string>
     <string name="stage_1_placeholder">Этап 1: скелет работает</string>
+
     <string name="alarm_ringing_title">Будильник</string>
     <string name="alarm_ringing_text">Нажмите, чтобы открыть</string>
     <string name="alarm_channel_name">Будильник</string>
     <string name="alarm_channel_description">Уведомления о срабатывании будильника</string>
+
     <string name="permission_exact_alarms">Точные будильники</string>
     <string name="permission_notifications">Уведомления</string>
+    <string name="permission_full_screen">Полноэкранные уведомления</string>
     <string name="permission_granted">разрешены</string>
     <string name="permission_denied">НЕ разрешены</string>
     <string name="permission_grant">Разрешить</string>
+    <string name="permission_grant_button">Разрешить</string>
+    <string name="permission_banner_title">Не все разрешения предоставлены</string>
+
     <string name="refresh">Обновить</string>
-    <string name="test_alarm_30sec">Тест: будильник через 30 секунд</string>
-    <string name="snooze_for_minutes">Отложить на %d мин</string>
     <string name="dismiss">Отключить</string>
-    <string name="alarms_list_header">Список будильников</string>
+    <string name="snooze_for_minutes">Отложить на %d мин</string>
     <string name="delete">Удалить</string>
+
+    <string name="alarm_list_title">Будильник</string>
+    <string name="alarm_list_empty_title">Нет будильников</string>
+    <string name="alarm_list_empty_subtitle">Нажмите +, чтобы создать</string>
+    <string name="alarm_list_test_button">🧪 Тест через 30 секунд</string>
+    <string name="alarm_list_test_scheduled">Будильник запланирован</string>
+    <string name="alarm_list_next">Следующий: %1$s — %2$s</string>
+    <string name="alarm_list_next_now">Следующий: сейчас</string>
+    <string name="alarm_list_delta_minutes">через %d мин</string>
+    <string name="alarm_list_delta_hours">через %1$d ч %2$d мин</string>
+    <string name="alarm_list_delete_title">Удалить будильник?</string>
+    <string name="alarm_list_delete_confirm">Удалить</string>
+    <string name="alarm_list_cancel">Отмена</string>
+    <string name="alarm_list_edit_stub">Редактирование — этап 5</string>
+    <string name="alarm_list_create_stub">Создание — этап 5</string>
+
+    <string name="day_mon_short">Пн</string>
+    <string name="day_tue_short">Вт</string>
+    <string name="day_wed_short">Ср</string>
+    <string name="day_thu_short">Чт</string>
+    <string name="day_fri_short">Пт</string>
+    <string name="day_sat_short">Сб</string>
+    <string name="day_sun_short">Вс</string>
+    <string name="days_every_day">Каждый день</string>
+    <string name="days_weekdays">Будни</string>
+    <string name="days_weekends">Выходные</string>
+    <string name="days_one_shot">Однократно</string>
+
+    <string name="menu_logs">Логи</string>
+    <string name="logs_title">Логи</string>
+    <string name="logs_clear_title">Очистить логи?</string>
+    <string name="logs_clear_confirm">Очистить</string>
+    <string name="logs_share">Поделиться</string>
+    <string name="logs_share_subject">MyAlarm logs</string>
+    <string name="logs_share_chooser">Поделиться логами</string>
+
+    <string name="alarms_list_header">Список будильников</string>
+    <string name="test_alarm_30sec">Тест: будильник через 30 секунд</string>
 </resources>

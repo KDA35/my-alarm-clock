@@ -77,4 +77,17 @@ object DayOfWeekMask {
         }
         return cal.timeInMillis
     }
+
+    fun formatDaysOfWeek(mask: Int): String {
+        if (mask == 0) return "Однократно"
+        return when (mask) {
+            EVERY_DAY -> "Каждый день"
+            WEEKDAYS -> "Будни"
+            WEEKENDS -> "Выходные"
+            else -> {
+                val labels = listOf("Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс")
+                (0..6).filter { mask and (1 shl it) != 0 }.joinToString(", ") { labels[it] }
+            }
+        }
+    }
 }

@@ -20,6 +20,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.net.toUri
 import com.myalarm.clock.R
 import com.myalarm.clock.data.AlarmRepository
+import com.myalarm.clock.util.AppLogger
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -32,6 +33,7 @@ import javax.inject.Inject
 class AlarmService : Service() {
 
     @Inject lateinit var repository: AlarmRepository
+    @Inject lateinit var logger: AppLogger
 
     private var ringtone: Ringtone? = null
     private var vibrator: Vibrator? = null
@@ -43,14 +45,14 @@ class AlarmService : Service() {
         const val EXTRA_ALARM_ID = "alarm_id"
         const val CHANNEL_ID = "alarm_channel"
         const val NOTIFICATION_ID = 1001
+        private const val TAG = "Service"
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val alarmId = intent?.getLongExtra(EXTRA_ALARM_ID, -1L) ?: -1L
+        logger.i(TAG, "Service onStartCommand action=${intent?.action} alarmId=$alarmId")
         when (intent?.action) {
-            ACTION_START -> {
-                val alarmId = intent.getLongExtra(EXTRA_ALARM_ID, -1L)
-                startAlarm(alarmId)
-            }
+            ACTION_START -> startAlarm(alarmId)
             ACTION_STOP -> stopSelfCleanly()
         }
         return START_NOT_STICKY
@@ -82,18 +84,26 @@ class AlarmService : Service() {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .build()
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            startForeground(
-                NOTIFICATION_ID,
-                notification,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
-            )
-        } else {
-            startForeground(NOTIFICATION_ID, notification)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startForeground(
+                    NOTIFICATION_ID,
+                    notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                )
+            } else {
+                startForeground(NOTIFICATION_ID, notification)
+            }
+            logger.i(TAG, "Foreground started, notification posted with full-screen intent")
+        } catch (e: Exception) {
+            logger.e(TAG, "Failed to start foreground", e)
+            stopSelf()
+            return
         }
 
         serviceScope.launch {
             val alarm = repository.getById(alarmId) ?: run {
+                logger.e(TAG, "Alarm id=$alarmId not found, stopping service")
                 stopSelfCleanly()
                 return@launch
             }
@@ -103,32 +113,48 @@ class AlarmService : Service() {
     }
 
     private fun playSound(uriString: String?) {
+        logger.d(TAG, "Preparing to play sound, uri=$uriString")
         val uri = uriString?.toUri()
             ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-        ringtone = RingtoneManager.getRingtone(this, uri).apply {
-            audioAttributes = AudioAttributes.Builder()
+        try {
+            val r = RingtoneManager.getRingtone(this, uri)
+            if (r == null) {
+                logger.e(TAG, "Failed to obtain ringtone for uri=$uriString")
+                return
+            }
+            r.audioAttributes = AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_ALARM)
                 .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                 .build()
-            isLooping = true
-            play()
+            r.isLooping = true
+            r.play()
+            ringtone = r
+            logger.i(TAG, "Ringtone playing successfully")
+        } catch (e: Exception) {
+            logger.e(TAG, "Error while starting ringtone", e)
         }
     }
 
     private fun startVibration() {
-        val vib = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            (getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager).defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-        }
-        vibrator = vib.apply {
-            val pattern = longArrayOf(0, 1000, 1000)
-            vibrate(VibrationEffect.createWaveform(pattern, 0))
+        try {
+            val vib = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                (getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager).defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+            }
+            vibrator = vib.apply {
+                val pattern = longArrayOf(0, 1000, 1000)
+                vibrate(VibrationEffect.createWaveform(pattern, 0))
+            }
+            logger.d(TAG, "Vibration started with pattern")
+        } catch (e: Exception) {
+            logger.e(TAG, "Failed to start vibration", e)
         }
     }
 
     private fun stopSelfCleanly() {
+        logger.i(TAG, "Service stopping cleanly")
         ringtone?.stop()
         ringtone = null
         vibrator?.cancel()
