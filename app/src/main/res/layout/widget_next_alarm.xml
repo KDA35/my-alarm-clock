@@ -12,7 +12,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textSize="11sp"
-        android:textColor="?android:textColorSecondary"
+        android:textColor="@color/widget_text_secondary"
         android:letterSpacing="0.1"
         android:text="@string/widget_label" />
 
@@ -21,7 +21,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textSize="32sp"
-        android:textColor="?android:textColorPrimary"
+        android:textColor="@color/widget_text_primary"
         android:layout_marginTop="2dp"
         android:text="—" />
 
@@ -30,7 +30,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textSize="13sp"
-        android:textColor="?android:textColorSecondary"
+        android:textColor="@color/widget_text_secondary"
         android:singleLine="true"
         android:ellipsize="end"
         android:text="@string/widget_no_alarms" />
