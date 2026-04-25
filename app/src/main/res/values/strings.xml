@@ -80,4 +80,38 @@
     <string name="time_picker_title">Перенести на</string>
     <string name="time_picker_confirm">Перенести</string>
     <string name="time_picker_cancel">Отмена</string>
+
+    <string name="edit_title">Будильник</string>
+    <string name="edit_cancel">Отмена</string>
+    <string name="edit_save">Сохранить</string>
+    <string name="edit_time_hint">Прокрутите для выбора времени</string>
+
+    <string name="edit_days_label">Дни</string>
+    <string name="edit_alarm_name">Имя будильника</string>
+    <string name="edit_alarm_name_hint">Например, «Выпить таблетку»</string>
+
+    <string name="edit_sound_title">Звук</string>
+    <string name="edit_sound_default">Системный по умолчанию</string>
+    <string name="edit_pick_ringtone">Выбрать рингтон</string>
+
+    <string name="edit_vibration_title">Вибрация</string>
+    <string name="edit_vibration_basic">Базовая</string>
+    <string name="edit_vibration_off">Выключена</string>
+
+    <string name="edit_snooze_title">Snooze</string>
+    <string name="edit_snooze_summary">%1$d мин · %2$s</string>
+    <string name="edit_snooze_summary_off">Выключен</string>
+    <string name="edit_snooze_repeats_format_one">%d повтор</string>
+    <string name="edit_snooze_repeats_format_few">%d повтора</string>
+    <string name="edit_snooze_repeats_format_many">%d повторов</string>
+    <string name="edit_snooze_repeats_unlimited">∞</string>
+    <string name="edit_snooze_enabled">Включён</string>
+    <string name="edit_snooze_interval">Интервал</string>
+    <string name="edit_snooze_minutes_short">мин</string>
+    <string name="edit_snooze_repeats">Повторы</string>
+    <string name="edit_snooze_hint">Snooze можно регулировать прямо во время звонка кнопками + и − на экране будильника.</string>
+
+    <string name="edit_delete_button">Удалить будильник</string>
+    <string name="edit_delete_dialog_title">Удалить будильник?</string>
+    <string name="edit_delete_confirm">Удалить</string>
 </resources>

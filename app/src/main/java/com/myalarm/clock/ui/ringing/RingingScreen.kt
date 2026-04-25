@@ -101,18 +101,23 @@ fun RingingScreen(
                 .fillMaxSize()
                 .padding(top = statusBars.calculateTopPadding())
         ) {
+            val snoozeAvailable = (state.alarm?.snoozeIntervalMinutes ?: 0) > 0
+
             TopBar(currentTime = state.currentTime)
             Spacer(Modifier.weight(1f))
             CenterBlock(alarm = state.alarm, currentTime = state.currentTime)
             Spacer(Modifier.weight(1f))
-            SnoozeControls(
-                state = state,
-                onIncrement = viewModel::incrementSnooze,
-                onDecrement = viewModel::decrementSnooze
-            )
-            Spacer(Modifier.height(28.dp))
+            if (snoozeAvailable) {
+                SnoozeControls(
+                    state = state,
+                    onIncrement = viewModel::incrementSnooze,
+                    onDecrement = viewModel::decrementSnooze
+                )
+                Spacer(Modifier.height(28.dp))
+            }
             ActionButtons(
                 snoozeMinutes = state.snoozeMinutes,
+                showSnooze = snoozeAvailable,
                 onSnoozeClick = {
                     val minutes = viewModel.snooze()
                     onSnooze(minutes)
@@ -337,6 +342,7 @@ private fun RoundIconButton(
 @Composable
 private fun ActionButtons(
     snoozeMinutes: Int,
+    showSnooze: Boolean,
     onSnoozeClick: () -> Unit,
     onPostponeClick: () -> Unit,
     onDismissClick: () -> Unit,
@@ -344,12 +350,14 @@ private fun ActionButtons(
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            SecondaryActionButton(
-                title = stringResource(R.string.ringing_snooze_btn),
-                subtitle = stringResource(R.string.ringing_snooze_btn_subtitle, snoozeMinutes),
-                onClick = onSnoozeClick,
-                modifier = Modifier.weight(1f)
-            )
+            if (showSnooze) {
+                SecondaryActionButton(
+                    title = stringResource(R.string.ringing_snooze_btn),
+                    subtitle = stringResource(R.string.ringing_snooze_btn_subtitle, snoozeMinutes),
+                    onClick = onSnoozeClick,
+                    modifier = Modifier.weight(1f)
+                )
+            }
             SecondaryActionButton(
                 title = stringResource(R.string.ringing_postpone_btn),
                 subtitle = stringResource(R.string.ringing_postpone_btn_subtitle),

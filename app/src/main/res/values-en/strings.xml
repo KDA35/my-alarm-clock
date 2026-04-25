@@ -80,4 +80,38 @@
     <string name="time_picker_title">Postpone to</string>
     <string name="time_picker_confirm">Postpone</string>
     <string name="time_picker_cancel">Cancel</string>
+
+    <string name="edit_title">Alarm</string>
+    <string name="edit_cancel">Cancel</string>
+    <string name="edit_save">Save</string>
+    <string name="edit_time_hint">Scroll to pick time</string>
+
+    <string name="edit_days_label">Days</string>
+    <string name="edit_alarm_name">Alarm name</string>
+    <string name="edit_alarm_name_hint">For example, "Take a pill"</string>
+
+    <string name="edit_sound_title">Sound</string>
+    <string name="edit_sound_default">System default</string>
+    <string name="edit_pick_ringtone">Pick ringtone</string>
+
+    <string name="edit_vibration_title">Vibration</string>
+    <string name="edit_vibration_basic">Basic</string>
+    <string name="edit_vibration_off">Off</string>
+
+    <string name="edit_snooze_title">Snooze</string>
+    <string name="edit_snooze_summary">%1$d min · %2$s</string>
+    <string name="edit_snooze_summary_off">Off</string>
+    <string name="edit_snooze_repeats_format_one">%d repeat</string>
+    <string name="edit_snooze_repeats_format_few">%d repeats</string>
+    <string name="edit_snooze_repeats_format_many">%d repeats</string>
+    <string name="edit_snooze_repeats_unlimited">∞</string>
+    <string name="edit_snooze_enabled">Enabled</string>
+    <string name="edit_snooze_interval">Interval</string>
+    <string name="edit_snooze_minutes_short">min</string>
+    <string name="edit_snooze_repeats">Repeats</string>
+    <string name="edit_snooze_hint">Snooze can be tuned during a call using + and − on the alarm screen.</string>
+
+    <string name="edit_delete_button">Delete alarm</string>
+    <string name="edit_delete_dialog_title">Delete alarm?</string>
+    <string name="edit_delete_confirm">Delete</string>
 </resources>
