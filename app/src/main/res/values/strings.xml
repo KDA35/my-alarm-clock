@@ -154,6 +154,60 @@
     <string name="notif_action_snooze">Отложить %d мин</string>
     <string name="notif_action_dismiss">Отключить</string>
 
+    <string name="menu_debug">Отладка</string>
+    <string name="debug_menu_title">Отладка</string>
+    <string name="debug_menu_test">Тестовое меню</string>
+    <string name="debug_menu_test_desc">Запуск разных тест-сценариев</string>
+    <string name="debug_menu_info">Информация о системе</string>
+    <string name="debug_menu_info_desc">Состояние разрешений и настроек</string>
+    <string name="debug_menu_diagnostic">Диагностический пакет</string>
+    <string name="debug_menu_diagnostic_desc">Собрать zip для отправки разработчику</string>
+
+    <string name="test_title">Тестовое меню</string>
+    <string name="test_group_a_title">Тесты срабатывания</string>
+    <string name="test_5sec">Тест через 5 секунд</string>
+    <string name="test_5sec_desc">Быстрая проверка, не успеешь заблокировать</string>
+    <string name="test_30sec">Тест через 30 секунд</string>
+    <string name="test_30sec_desc">Заблокируй экран после нажатия</string>
+    <string name="test_2min">Тест через 2 минуты</string>
+    <string name="test_2min_desc">Положи телефон, проверка Doze mode</string>
+    <string name="test_series">Серия 3 теста</string>
+    <string name="test_series_desc">С интервалом 1 минута</string>
+
+    <string name="test_group_b_title">Тесты с отключёнными слоями</string>
+    <string name="test_no_layer1">Без Layer 1 (FSI)</string>
+    <string name="test_no_layer1_desc">Проверить, тянет ли overlay один</string>
+    <string name="test_no_layer2">Без Layer 2 (Overlay)</string>
+    <string name="test_no_layer2_desc">Возврат к ситуации до этапа 6.1</string>
+    <string name="test_only_layer3">Только Layer 3</string>
+    <string name="test_only_layer3_desc">Только кнопки в шторке</string>
+    <string name="test_reset_flags">Сбросить флаги отказов</string>
+
+    <string name="test_group_c_title">Тесты UI</string>
+    <string name="test_open_ui_direct">Открыть экран срабатывания</string>
+    <string name="test_open_ui_direct_desc">Без AlarmManager, без звука. Только UI</string>
+
+    <string name="test_group_d_title">Очистка</string>
+    <string name="test_delete_all">Удалить все тестовые будильники</string>
+    <string name="test_clear_logs">Очистить логи</string>
+
+    <string name="debug_info_title">Информация о системе</string>
+    <string name="debug_info_section_device">Устройство</string>
+    <string name="debug_info_section_permissions">Разрешения</string>
+    <string name="debug_info_section_channel">Notification channel</string>
+    <string name="debug_info_section_dnd">Не беспокоить</string>
+    <string name="debug_info_section_alarms">Активные будильники</string>
+    <string name="debug_info_section_test_mode">⚠ Тестовый режим активен</string>
+    <string name="debug_info_copy">Скопировать всё</string>
+    <string name="debug_info_copied">Скопировано в буфер обмена</string>
+    <string name="debug_info_open_settings">Открыть настройки</string>
+
+    <string name="diagnostic_title">Диагностический пакет</string>
+    <string name="diagnostic_description">Соберёт zip-файл со всей информацией для разработчика. Имена будильников будут анонимизированы.</string>
+    <string name="diagnostic_build_button">Сформировать и поделиться</string>
+    <string name="diagnostic_share_subject">MyAlarm diagnostic</string>
+    <string name="diagnostic_share_chooser">Поделиться диагностикой</string>
+
     <plurals name="snooze_repeats">
         <item quantity="one">%d повтор</item>
         <item quantity="few">%d повтора</item>

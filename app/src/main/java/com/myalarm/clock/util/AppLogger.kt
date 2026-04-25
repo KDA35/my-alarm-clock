@@ -99,6 +99,10 @@ class AppLogger @Inject constructor(
         }
     }
 
+    fun getRecentEntries(limit: Int): List<LogEntry> = synchronized(buffer) {
+        if (buffer.size <= limit) buffer.toList() else buffer.toList().takeLast(limit)
+    }
+
     fun getAllLogText(): String {
         val dir = File(context.filesDir, "logs")
         if (!dir.exists()) return ""

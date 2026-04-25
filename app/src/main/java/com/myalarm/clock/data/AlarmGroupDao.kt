@@ -16,6 +16,9 @@ interface AlarmGroupDao {
     @Query("SELECT * FROM alarm_groups WHERE id = :id")
     suspend fun getById(id: Long): AlarmGroup?
 
+    @Query("SELECT * FROM alarm_groups WHERE name = :name LIMIT 1")
+    suspend fun getByName(name: String): AlarmGroup?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(group: AlarmGroup): Long
 

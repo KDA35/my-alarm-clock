@@ -25,6 +25,7 @@ class AlarmRingingActivity : ComponentActivity() {
 
     companion object {
         const val EXTRA_ALARM_ID = "alarm_id"
+        const val EXTRA_TEST_MODE_NO_SOUND = "test_mode_no_sound"
         private const val TAG = "RingingUI"
         private const val FIRE_TAG = "AlarmFire"
         private val timeFormat = SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault())
@@ -39,10 +40,11 @@ class AlarmRingingActivity : ComponentActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         val alarmId = intent.getLongExtra(EXTRA_ALARM_ID, -1L)
+        val testMode = intent.getBooleanExtra(EXTRA_TEST_MODE_NO_SOUND, false)
         val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
         logger.i(
             TAG,
-            "Activity created, alarmId=$alarmId, isLocked=${keyguardManager.isKeyguardLocked}, isDeviceSecure=${keyguardManager.isDeviceSecure}"
+            "Activity created, alarmId=$alarmId, isLocked=${keyguardManager.isKeyguardLocked}, isDeviceSecure=${keyguardManager.isDeviceSecure}, testMode=$testMode"
         )
 
         // Diagnostic: how long did it take from "alarm fired" to "activity actually shown"?
@@ -62,16 +64,17 @@ class AlarmRingingActivity : ComponentActivity() {
 
         setContent {
             RingingScreen(
-                onSnooze = { _ -> handleClose() },
-                onPostpone = { _ -> handleClose() },
-                onPostponeUntil = { _, _ -> handleClose() },
-                onDismiss = { handleClose() }
+                testMode = testMode,
+                onSnooze = { _ -> handleClose(testMode) },
+                onPostpone = { _ -> handleClose(testMode) },
+                onPostponeUntil = { _, _ -> handleClose(testMode) },
+                onDismiss = { handleClose(testMode) }
             )
         }
     }
 
-    private fun handleClose() {
-        stopAlarmService()
+    private fun handleClose(testMode: Boolean) {
+        if (!testMode) stopAlarmService()
         finish()
     }
 
