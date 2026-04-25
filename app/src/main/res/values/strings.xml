@@ -2,4 +2,19 @@
 <resources>
     <string name="app_name">MyAlarm</string>
     <string name="stage_1_placeholder">Этап 1: скелет работает</string>
+    <string name="alarm_ringing_title">Будильник</string>
+    <string name="alarm_ringing_text">Нажмите, чтобы открыть</string>
+    <string name="alarm_channel_name">Будильник</string>
+    <string name="alarm_channel_description">Уведомления о срабатывании будильника</string>
+    <string name="permission_exact_alarms">Точные будильники</string>
+    <string name="permission_notifications">Уведомления</string>
+    <string name="permission_granted">разрешены</string>
+    <string name="permission_denied">НЕ разрешены</string>
+    <string name="permission_grant">Разрешить</string>
+    <string name="refresh">Обновить</string>
+    <string name="test_alarm_30sec">Тест: будильник через 30 секунд</string>
+    <string name="snooze_for_minutes">Отложить на %d мин</string>
+    <string name="dismiss">Отключить</string>
+    <string name="alarms_list_header">Список будильников</string>
+    <string name="delete">Удалить</string>
 </resources>
