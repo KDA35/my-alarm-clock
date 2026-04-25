@@ -2,4 +2,19 @@
 <resources>
     <string name="app_name">MyAlarm</string>
     <string name="stage_1_placeholder">Stage 1: skeleton works</string>
+    <string name="alarm_ringing_title">Alarm</string>
+    <string name="alarm_ringing_text">Tap to open</string>
+    <string name="alarm_channel_name">Alarm</string>
+    <string name="alarm_channel_description">Alarm trigger notifications</string>
+    <string name="permission_exact_alarms">Exact alarms</string>
+    <string name="permission_notifications">Notifications</string>
+    <string name="permission_granted">granted</string>
+    <string name="permission_denied">NOT granted</string>
+    <string name="permission_grant">Grant</string>
+    <string name="refresh">Refresh</string>
+    <string name="test_alarm_30sec">Test: alarm in 30 seconds</string>
+    <string name="snooze_for_minutes">Snooze %d min</string>
+    <string name="dismiss">Dismiss</string>
+    <string name="alarms_list_header">Alarms list</string>
+    <string name="delete">Delete</string>
 </resources>
