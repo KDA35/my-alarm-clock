@@ -107,14 +107,7 @@ fun AlarmListScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = {
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.alarm_list_create_stub),
-                    Toast.LENGTH_SHORT
-                ).show()
-                onCreateAlarm()
-            }) {
+            FloatingActionButton(onClick = onCreateAlarm) {
                 Icon(Icons.Default.Add, contentDescription = null)
             }
         }
@@ -151,14 +144,7 @@ fun AlarmListScreen(
                 AlarmList(
                     alarms = alarms,
                     onToggle = viewModel::toggleEnabled,
-                    onClick = { id ->
-                        Toast.makeText(
-                            context,
-                            context.getString(R.string.alarm_list_edit_stub),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        onEditAlarm(id)
-                    },
+                    onClick = onEditAlarm,
                     onLongClick = { alarm -> deleteCandidate = alarm },
                     contentPadding = PaddingValues(bottom = 96.dp)
                 )
