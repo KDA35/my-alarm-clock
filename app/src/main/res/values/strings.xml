@@ -59,4 +59,25 @@
 
     <string name="alarms_list_header">Список будильников</string>
     <string name="test_alarm_30sec">Тест: будильник через 30 секунд</string>
+
+    <string name="ringing_label_alarm">Будильник</string>
+    <string name="ringing_minutes">МИНУТ</string>
+    <string name="ringing_will_ring_at">прозвонит в %s</string>
+    <string name="ringing_snooze_btn">Отложить</string>
+    <string name="ringing_snooze_btn_subtitle">%d мин</string>
+    <string name="ringing_postpone_btn">На потом</string>
+    <string name="ringing_postpone_btn_subtitle">часы</string>
+    <string name="ringing_dismiss_btn">Отключить</string>
+    <string name="ringing_repeats_unlimited">Без ограничений</string>
+
+    <string name="postpone_title">Перенести на</string>
+    <string name="postpone_30min">Через 30 минут</string>
+    <string name="postpone_1h">Через 1 час</string>
+    <string name="postpone_2h">Через 2 часа</string>
+    <string name="postpone_4h">Через 4 часа</string>
+    <string name="postpone_pick_time">Указать время…</string>
+
+    <string name="time_picker_title">Перенести на</string>
+    <string name="time_picker_confirm">Перенести</string>
+    <string name="time_picker_cancel">Отмена</string>
 </resources>
