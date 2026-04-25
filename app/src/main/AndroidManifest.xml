@@ -41,6 +41,7 @@
             android:exported="false"
             android:launchMode="singleTask"
             android:showOnLockScreen="true"
+            android:turnScreenOn="true"
             android:taskAffinity=""
             android:excludeFromRecents="true"
             android:theme="@style/Theme.MyAlarm" />
