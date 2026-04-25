@@ -61,6 +61,18 @@ class AlarmService : Service() {
         @Volatile
         var lastFireTimestampElapsed: Long = 0L
             private set
+
+        // Test-mode: force-disable individual layers to verify multi-layer fallback.
+        // Reset on app restart (process death) and via Test Menu auto-reset (5 minutes).
+        @Volatile var forceDisableLayer1 = false
+        @Volatile var forceDisableLayer2 = false
+        @Volatile var forceDisableLayer3 = false
+
+        fun resetTestFlags() {
+            forceDisableLayer1 = false
+            forceDisableLayer2 = false
+            forceDisableLayer3 = false
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -92,7 +104,11 @@ class AlarmService : Service() {
         acquireWakeLock()
 
         // Layer 1: full-screen-intent notification (legacy primary path).
-        val initialNotification = buildNotification(alarmId, label = null)
+        // Note: foreground notification must be posted regardless (Android requires it within
+        // 5s of startForegroundService) — but we can post one without FSI when Layer 1 is forced off.
+        val withActions = !forceDisableLayer3
+        val withFsi = !forceDisableLayer1
+        val initialNotification = buildNotification(alarmId, label = null, withFsi = withFsi, withActions = withActions)
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 startForeground(
@@ -103,11 +119,15 @@ class AlarmService : Service() {
             } else {
                 startForeground(NOTIFICATION_ID, initialNotification)
             }
-            val canFsi = canUseFullScreenIntent()
-            logger.i(
-                FIRE_TAG,
-                "Layer 1 (FSI): canUseFullScreenIntent=$canFsi, posted notification with full-screen intent"
-            )
+            if (forceDisableLayer1) {
+                logger.w(FIRE_TAG, "Layer 1 (FSI): SKIPPED by test mode")
+            } else {
+                val canFsi = canUseFullScreenIntent()
+                logger.i(
+                    FIRE_TAG,
+                    "Layer 1 (FSI): canUseFullScreenIntent=$canFsi, posted notification with full-screen intent"
+                )
+            }
         } catch (e: Exception) {
             logger.e(FIRE_TAG, "Layer 1 (FSI): startForeground failed", e)
             stopSelf()
@@ -115,10 +135,18 @@ class AlarmService : Service() {
         }
 
         // Layer 2: direct Activity launch via SYSTEM_ALERT_WINDOW (works around FSI restrictions).
-        tryLaunchActivityDirectly(alarmId)
+        if (forceDisableLayer2) {
+            logger.w(FIRE_TAG, "Layer 2 (Overlay): SKIPPED by test mode")
+        } else {
+            tryLaunchActivityDirectly(alarmId)
+        }
 
         // Layer 3 logging happens implicitly when the notification was built with actions.
-        logger.i(FIRE_TAG, "Layer 3 (Actions): notification actions attached (Snooze/Dismiss)")
+        if (forceDisableLayer3) {
+            logger.w(FIRE_TAG, "Layer 3 (Actions): SKIPPED by test mode")
+        } else {
+            logger.i(FIRE_TAG, "Layer 3 (Actions): notification actions attached (Snooze/Dismiss)")
+        }
 
         serviceScope.launch {
             val alarm = repository.getById(alarmId) ?: run {
@@ -128,7 +156,16 @@ class AlarmService : Service() {
             }
             // Re-post notification with the real label for the lock-screen shade.
             val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            nm.notify(NOTIFICATION_ID, buildNotification(alarmId, alarm.label, alarm.snoozeIntervalMinutes))
+            nm.notify(
+                NOTIFICATION_ID,
+                buildNotification(
+                    alarmId,
+                    alarm.label,
+                    alarm.snoozeIntervalMinutes,
+                    withFsi = !forceDisableLayer1,
+                    withActions = !forceDisableLayer3
+                )
+            )
 
             if (alarm.volume > 0) {
                 playSound(alarm.ringtoneUri, alarm.volume)
@@ -197,7 +234,9 @@ class AlarmService : Service() {
     private fun buildNotification(
         alarmId: Long,
         label: String?,
-        snoozeMinutes: Int = 10
+        snoozeMinutes: Int = 10,
+        withFsi: Boolean = true,
+        withActions: Boolean = true
     ): Notification {
         val fullScreenIntent = Intent(this, AlarmRingingActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -239,19 +278,24 @@ class AlarmService : Service() {
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setFullScreenIntent(fullScreenPi, true)
             .setOngoing(true)
             .setAutoCancel(false)
             .setContentIntent(fullScreenPi)
 
-        if (snoozeMinutes > 0) {
-            builder.addAction(
-                0,
-                getString(R.string.notif_action_snooze, snoozeMinutes.coerceAtLeast(1)),
-                snoozePi
-            )
+        if (withFsi) {
+            builder.setFullScreenIntent(fullScreenPi, true)
         }
-        builder.addAction(0, getString(R.string.notif_action_dismiss), dismissPi)
+
+        if (withActions) {
+            if (snoozeMinutes > 0) {
+                builder.addAction(
+                    0,
+                    getString(R.string.notif_action_snooze, snoozeMinutes.coerceAtLeast(1)),
+                    snoozePi
+                )
+            }
+            builder.addAction(0, getString(R.string.notif_action_dismiss), dismissPi)
+        }
 
         return builder.build()
     }

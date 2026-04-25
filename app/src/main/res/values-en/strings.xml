@@ -154,6 +154,60 @@
     <string name="notif_action_snooze">Snooze %d min</string>
     <string name="notif_action_dismiss">Dismiss</string>
 
+    <string name="menu_debug">Debug</string>
+    <string name="debug_menu_title">Debug</string>
+    <string name="debug_menu_test">Test menu</string>
+    <string name="debug_menu_test_desc">Run different test scenarios</string>
+    <string name="debug_menu_info">System info</string>
+    <string name="debug_menu_info_desc">Permissions and settings status</string>
+    <string name="debug_menu_diagnostic">Diagnostic package</string>
+    <string name="debug_menu_diagnostic_desc">Build a zip to send to the developer</string>
+
+    <string name="test_title">Test menu</string>
+    <string name="test_group_a_title">Trigger tests</string>
+    <string name="test_5sec">Test in 5 seconds</string>
+    <string name="test_5sec_desc">Quick check, no time to lock</string>
+    <string name="test_30sec">Test in 30 seconds</string>
+    <string name="test_30sec_desc">Lock the screen after pressing</string>
+    <string name="test_2min">Test in 2 minutes</string>
+    <string name="test_2min_desc">Put the phone down, Doze mode check</string>
+    <string name="test_series">Series of 3 tests</string>
+    <string name="test_series_desc">1 minute apart</string>
+
+    <string name="test_group_b_title">Tests with disabled layers</string>
+    <string name="test_no_layer1">Without Layer 1 (FSI)</string>
+    <string name="test_no_layer1_desc">Check if overlay alone is enough</string>
+    <string name="test_no_layer2">Without Layer 2 (Overlay)</string>
+    <string name="test_no_layer2_desc">Back to the situation before stage 6.1</string>
+    <string name="test_only_layer3">Only Layer 3</string>
+    <string name="test_only_layer3_desc">Only the shade buttons should work</string>
+    <string name="test_reset_flags">Reset disable flags</string>
+
+    <string name="test_group_c_title">UI tests</string>
+    <string name="test_open_ui_direct">Open ringing screen</string>
+    <string name="test_open_ui_direct_desc">No AlarmManager, no sound. UI only</string>
+
+    <string name="test_group_d_title">Cleanup</string>
+    <string name="test_delete_all">Delete all test alarms</string>
+    <string name="test_clear_logs">Clear logs</string>
+
+    <string name="debug_info_title">System info</string>
+    <string name="debug_info_section_device">Device</string>
+    <string name="debug_info_section_permissions">Permissions</string>
+    <string name="debug_info_section_channel">Notification channel</string>
+    <string name="debug_info_section_dnd">Do Not Disturb</string>
+    <string name="debug_info_section_alarms">Active alarms</string>
+    <string name="debug_info_section_test_mode">⚠ Test mode active</string>
+    <string name="debug_info_copy">Copy all</string>
+    <string name="debug_info_copied">Copied to clipboard</string>
+    <string name="debug_info_open_settings">Open settings</string>
+
+    <string name="diagnostic_title">Diagnostic package</string>
+    <string name="diagnostic_description">Builds a zip with everything the developer needs. Alarm labels will be anonymized.</string>
+    <string name="diagnostic_build_button">Build and share</string>
+    <string name="diagnostic_share_subject">MyAlarm diagnostic</string>
+    <string name="diagnostic_share_chooser">Share diagnostic</string>
+
     <plurals name="snooze_repeats">
         <item quantity="one">%d repeat</item>
         <item quantity="other">%d repeats</item>

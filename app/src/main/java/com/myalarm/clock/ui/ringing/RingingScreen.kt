@@ -74,6 +74,7 @@ fun RingingScreen(
     onPostpone: (Int) -> Unit,
     onPostponeUntil: (Int, Int) -> Unit,
     onDismiss: () -> Unit,
+    testMode: Boolean = false,
     viewModel: RingingViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -103,7 +104,7 @@ fun RingingScreen(
         ) {
             val snoozeAvailable = (state.alarm?.snoozeIntervalMinutes ?: 0) > 0
 
-            TopBar(currentTime = state.currentTime)
+            TopBar(currentTime = state.currentTime, testMode = testMode)
             Spacer(Modifier.weight(1f))
             CenterBlock(alarm = state.alarm, currentTime = state.currentTime)
             Spacer(Modifier.weight(1f))
@@ -119,12 +120,12 @@ fun RingingScreen(
                 snoozeMinutes = state.snoozeMinutes,
                 showSnooze = snoozeAvailable,
                 onSnoozeClick = {
-                    val minutes = viewModel.snooze()
+                    val minutes = if (testMode) state.snoozeMinutes else viewModel.snooze()
                     onSnooze(minutes)
                 },
                 onPostponeClick = { showPostponeSheet = true },
                 onDismissClick = {
-                    viewModel.dismiss()
+                    if (!testMode) viewModel.dismiss()
                     onDismiss()
                 },
                 modifier = Modifier.padding(horizontal = 20.dp)
@@ -139,7 +140,7 @@ fun RingingScreen(
             currentTime = state.currentTime,
             onPreset = { minutes ->
                 showPostponeSheet = false
-                viewModel.postpone(minutes)
+                if (!testMode) viewModel.postpone(minutes)
                 onPostpone(minutes)
             },
             onPickTime = {
@@ -155,7 +156,7 @@ fun RingingScreen(
             currentTime = state.currentTime,
             onConfirm = { hour, minute ->
                 showTimePicker = false
-                viewModel.postponeUntil(hour, minute)
+                if (!testMode) viewModel.postponeUntil(hour, minute)
                 onPostponeUntil(hour, minute)
             },
             onDismiss = { showTimePicker = false }
@@ -164,7 +165,7 @@ fun RingingScreen(
 }
 
 @Composable
-private fun TopBar(currentTime: Long) {
+private fun TopBar(currentTime: Long, testMode: Boolean = false) {
     val formatted = remember(currentTime / 30_000L) {
         SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(currentTime))
     }
@@ -180,12 +181,22 @@ private fun TopBar(currentTime: Long) {
             fontSize = 13.sp,
             color = Color.White.copy(alpha = 0.55f)
         )
-        Text(
-            stringResource(R.string.ringing_label_alarm).uppercase(),
-            fontSize = 11.sp,
-            letterSpacing = 1.sp,
-            color = Color.White.copy(alpha = 0.55f)
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (testMode) {
+                Text(
+                    "ТЕСТ UI · ",
+                    fontSize = 11.sp,
+                    letterSpacing = 1.sp,
+                    color = Color(0xFFFFB300)
+                )
+            }
+            Text(
+                stringResource(R.string.ringing_label_alarm).uppercase(),
+                fontSize = 11.sp,
+                letterSpacing = 1.sp,
+                color = Color.White.copy(alpha = 0.55f)
+            )
+        }
     }
 }
 

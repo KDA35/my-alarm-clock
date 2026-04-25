@@ -78,6 +78,7 @@ fun AlarmListScreen(
     onCreateAlarm: () -> Unit,
     onEditAlarm: (Long) -> Unit,
     onShowOnboarding: () -> Unit = {},
+    onOpenDebug: () -> Unit = {},
     viewModel: AlarmListViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -114,6 +115,13 @@ fun AlarmListScreen(
                             onClick = {
                                 menuOpen = false
                                 onShowOnboarding()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.menu_debug)) },
+                            onClick = {
+                                menuOpen = false
+                                onOpenDebug()
                             }
                         )
                     }

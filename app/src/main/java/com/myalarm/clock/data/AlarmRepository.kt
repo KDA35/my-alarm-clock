@@ -19,6 +19,7 @@ class AlarmRepository @Inject constructor(
 ) {
     companion object {
         private const val TAG = "Repo"
+        const val TEST_GROUP_NAME = "🧪 Тесты"
     }
 
     fun observeAll(): Flow<List<Alarm>> = alarmDao.observeAll()
@@ -100,6 +101,22 @@ class AlarmRepository @Inject constructor(
         val alarm = alarmDao.getById(alarmId) ?: return
         alarmDao.update(alarm.copy(groupId = groupId))
         logger.i(TAG, "Alarm id=$alarmId linked to group id=$groupId")
+    }
+
+    suspend fun ensureTestGroup(): Long {
+        val existing = groupDao.getByName(TEST_GROUP_NAME)
+        if (existing != null) return existing.id
+        val id = groupDao.insert(AlarmGroup(name = TEST_GROUP_NAME, enabled = true))
+        logger.i(TAG, "Auto-created test group id=$id")
+        return id
+    }
+
+    suspend fun deleteAllTestAlarms(): Int {
+        val testGroup = groupDao.getByName(TEST_GROUP_NAME) ?: return 0
+        val alarms = alarmDao.getByGroupId(testGroup.id)
+        alarms.forEach { delete(it) }
+        logger.i(TAG, "Deleted ${alarms.size} test alarms")
+        return alarms.size
     }
 
     private fun notifyWidget() {
