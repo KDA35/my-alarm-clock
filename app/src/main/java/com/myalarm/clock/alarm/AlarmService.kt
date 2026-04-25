@@ -15,9 +15,12 @@ import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
+import android.os.SystemClock
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import com.myalarm.clock.R
 import com.myalarm.clock.data.AlarmRepository
@@ -39,6 +42,7 @@ class AlarmService : Service() {
 
     private var ringtone: Ringtone? = null
     private var vibrator: Vibrator? = null
+    private var wakeLock: PowerManager.WakeLock? = null
     private var previousAlarmVolume: Int = -1
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
@@ -49,9 +53,14 @@ class AlarmService : Service() {
         const val CHANNEL_ID = "alarm_channel"
         const val NOTIFICATION_ID = 1001
         private const val TAG = "Service"
+        private const val FIRE_TAG = "AlarmFire"
 
         @Volatile
         private var currentlyRingingAlarmId: Long? = null
+
+        @Volatile
+        var lastFireTimestampElapsed: Long = 0L
+            private set
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -64,6 +73,8 @@ class AlarmService : Service() {
                     return START_NOT_STICKY
                 }
                 currentlyRingingAlarmId = alarmId
+                lastFireTimestampElapsed = SystemClock.elapsedRealtime()
+                logger.i(FIRE_TAG, "=== ALARM FIRED === alarmId=$alarmId")
                 startAlarm(alarmId)
             }
             ACTION_STOP -> {
@@ -77,6 +88,10 @@ class AlarmService : Service() {
     private fun startAlarm(alarmId: Long) {
         createNotificationChannel()
 
+        // Layer 4: wake lock first — bring the screen up before anything else tries to render.
+        acquireWakeLock()
+
+        // Layer 1: full-screen-intent notification (legacy primary path).
         val initialNotification = buildNotification(alarmId, label = null)
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -88,12 +103,22 @@ class AlarmService : Service() {
             } else {
                 startForeground(NOTIFICATION_ID, initialNotification)
             }
-            logger.i(TAG, "Foreground started, notification posted with full-screen intent")
+            val canFsi = canUseFullScreenIntent()
+            logger.i(
+                FIRE_TAG,
+                "Layer 1 (FSI): canUseFullScreenIntent=$canFsi, posted notification with full-screen intent"
+            )
         } catch (e: Exception) {
-            logger.e(TAG, "Failed to start foreground", e)
+            logger.e(FIRE_TAG, "Layer 1 (FSI): startForeground failed", e)
             stopSelf()
             return
         }
+
+        // Layer 2: direct Activity launch via SYSTEM_ALERT_WINDOW (works around FSI restrictions).
+        tryLaunchActivityDirectly(alarmId)
+
+        // Layer 3 logging happens implicitly when the notification was built with actions.
+        logger.i(FIRE_TAG, "Layer 3 (Actions): notification actions attached (Snooze/Dismiss)")
 
         serviceScope.launch {
             val alarm = repository.getById(alarmId) ?: run {
@@ -101,10 +126,10 @@ class AlarmService : Service() {
                 stopSelfCleanly()
                 return@launch
             }
-            if (alarm.label.isNotBlank()) {
-                val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                nm.notify(NOTIFICATION_ID, buildNotification(alarmId, alarm.label))
-            }
+            // Re-post notification with the real label for the lock-screen shade.
+            val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            nm.notify(NOTIFICATION_ID, buildNotification(alarmId, alarm.label, alarm.snoozeIntervalMinutes))
+
             if (alarm.volume > 0) {
                 playSound(alarm.ringtoneUri, alarm.volume)
             } else {
@@ -116,7 +141,64 @@ class AlarmService : Service() {
         }
     }
 
-    private fun buildNotification(alarmId: Long, label: String?): Notification {
+    private fun tryLaunchActivityDirectly(alarmId: Long) {
+        val canDraw = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Settings.canDrawOverlays(this)
+        } else true
+        if (!canDraw) {
+            logger.i(FIRE_TAG, "Layer 2 (Overlay): canDrawOverlays=false, skipped")
+            return
+        }
+        try {
+            val intent = Intent(this, AlarmRingingActivity::class.java).apply {
+                addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_NO_USER_ACTION
+                )
+                putExtra(AlarmRingingActivity.EXTRA_ALARM_ID, alarmId)
+            }
+            startActivity(intent)
+            logger.i(FIRE_TAG, "Layer 2 (Overlay): canDrawOverlays=true, started Activity directly")
+        } catch (e: Exception) {
+            logger.e(FIRE_TAG, "Layer 2 (Overlay): startActivity failed", e)
+        }
+    }
+
+    private fun canUseFullScreenIntent(): Boolean =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).canUseFullScreenIntent()
+        } else true
+
+    private fun acquireWakeLock() {
+        try {
+            val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+            @Suppress("DEPRECATION")
+            val wl = pm.newWakeLock(
+                PowerManager.FULL_WAKE_LOCK or
+                    PowerManager.ACQUIRE_CAUSES_WAKEUP or
+                    PowerManager.ON_AFTER_RELEASE,
+                "MyAlarm:RingingWake"
+            )
+            wl.setReferenceCounted(false)
+            wl.acquire(60_000L)
+            wakeLock = wl
+            logger.i(FIRE_TAG, "Layer 4 (Wake): wake lock acquired (60s timeout)")
+        } catch (e: Exception) {
+            logger.e(FIRE_TAG, "Layer 4 (Wake): failed to acquire wake lock", e)
+        }
+    }
+
+    private fun releaseWakeLock() {
+        wakeLock?.takeIf { it.isHeld }?.runCatching { release() }
+        wakeLock = null
+    }
+
+    private fun buildNotification(
+        alarmId: Long,
+        label: String?,
+        snoozeMinutes: Int = 10
+    ): Notification {
         val fullScreenIntent = Intent(this, AlarmRingingActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra(AlarmRingingActivity.EXTRA_ALARM_ID, alarmId)
@@ -129,7 +211,28 @@ class AlarmService : Service() {
         )
         val contentText = label?.takeIf { it.isNotBlank() }
             ?: getString(R.string.alarm_ringing_text)
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+
+        val snoozePi = PendingIntent.getBroadcast(
+            this,
+            (alarmId * 10 + 1).toInt(),
+            Intent(this, AlarmActionReceiver::class.java).apply {
+                action = AlarmActionReceiver.ACTION_SNOOZE
+                putExtra(AlarmActionReceiver.EXTRA_ALARM_ID, alarmId)
+                putExtra(AlarmActionReceiver.EXTRA_SNOOZE_MINUTES, snoozeMinutes.coerceAtLeast(1))
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val dismissPi = PendingIntent.getBroadcast(
+            this,
+            (alarmId * 10 + 2).toInt(),
+            Intent(this, AlarmActionReceiver::class.java).apply {
+                action = AlarmActionReceiver.ACTION_DISMISS
+                putExtra(AlarmActionReceiver.EXTRA_ALARM_ID, alarmId)
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(getString(R.string.alarm_ringing_title))
             .setContentText(contentText)
@@ -139,7 +242,18 @@ class AlarmService : Service() {
             .setFullScreenIntent(fullScreenPi, true)
             .setOngoing(true)
             .setAutoCancel(false)
-            .build()
+            .setContentIntent(fullScreenPi)
+
+        if (snoozeMinutes > 0) {
+            builder.addAction(
+                0,
+                getString(R.string.notif_action_snooze, snoozeMinutes.coerceAtLeast(1)),
+                snoozePi
+            )
+        }
+        builder.addAction(0, getString(R.string.notif_action_dismiss), dismissPi)
+
+        return builder.build()
     }
 
     private fun playSound(uriString: String?, volume: Int) {
@@ -239,6 +353,7 @@ class AlarmService : Service() {
         vibrator?.cancel()
         vibrator = null
         restoreAlarmStreamVolume()
+        releaseWakeLock()
         currentlyRingingAlarmId = null
         serviceScope.cancel()
         stopForeground(STOP_FOREGROUND_REMOVE)
@@ -265,6 +380,7 @@ class AlarmService : Service() {
         ringtone?.stop()
         vibrator?.cancel()
         restoreAlarmStreamVolume()
+        releaseWakeLock()
         super.onDestroy()
     }
 

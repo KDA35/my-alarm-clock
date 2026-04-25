@@ -27,6 +27,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.Button
@@ -53,11 +54,11 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun OnboardingScreen(onFinished: () -> Unit) {
-    val pagerState = rememberPagerState(pageCount = { 4 })
+    val pagerState = rememberPagerState(pageCount = { 5 })
     val scope = rememberCoroutineScope()
 
     fun next() {
-        if (pagerState.currentPage < 3) {
+        if (pagerState.currentPage < 4) {
             scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
         } else {
             onFinished()
@@ -86,10 +87,11 @@ fun OnboardingScreen(onFinished: () -> Unit) {
                     0 -> WelcomePage(onNext = ::next)
                     1 -> NotificationsPage(onNext = ::next)
                     2 -> ExactAlarmsPage(onNext = ::next)
-                    3 -> FullScreenPage(onDone = onFinished)
+                    3 -> FullScreenPage(onNext = ::next)
+                    4 -> OverlayPage(onDone = onFinished)
                 }
             }
-            PageIndicator(current = pagerState.currentPage, total = 4)
+            PageIndicator(current = pagerState.currentPage, total = 5)
             Spacer(Modifier.height(24.dp))
         }
     }
@@ -144,7 +146,7 @@ private fun ExactAlarmsPage(onNext: () -> Unit) {
 }
 
 @Composable
-private fun FullScreenPage(onDone: () -> Unit) {
+private fun FullScreenPage(onNext: () -> Unit) {
     val context = LocalContext.current
     OnboardingPageScaffold(
         icon = Icons.Default.Lock,
@@ -162,6 +164,26 @@ private fun FullScreenPage(onDone: () -> Unit) {
         tertiaryLabel = stringResource(R.string.onboarding_battery_settings),
         onTertiary = {
             val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+            runCatching { context.startActivity(intent) }
+        },
+        secondaryLabel = stringResource(R.string.onboarding_next),
+        onSecondary = onNext
+    )
+}
+
+@Composable
+private fun OverlayPage(onDone: () -> Unit) {
+    val context = LocalContext.current
+    OnboardingPageScaffold(
+        icon = Icons.Default.Layers,
+        title = stringResource(R.string.onboarding_overlay_title),
+        subtitle = stringResource(R.string.onboarding_overlay_subtitle),
+        primaryLabel = stringResource(R.string.onboarding_open_settings),
+        onPrimary = {
+            val intent = Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:${context.packageName}")
+            )
             runCatching { context.startActivity(intent) }
         },
         secondaryLabel = stringResource(R.string.onboarding_done),

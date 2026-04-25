@@ -148,6 +148,11 @@
     <string name="onboarding_exact_subtitle">So the alarm fires exactly on time, not plus-or-minus several minutes.</string>
     <string name="onboarding_fullscreen_title">Full-screen notifications</string>
     <string name="onboarding_fullscreen_subtitle">So the alarm screen shows up even on a locked phone. Disabling battery optimization is also recommended.</string>
+    <string name="onboarding_overlay_title">Display over other apps</string>
+    <string name="onboarding_overlay_subtitle">Backup channel. On GrapheneOS and some Android builds the system restricts full-screen notifications for sideload apps — this permission guarantees we can show the alarm screen over the lock screen.</string>
+
+    <string name="notif_action_snooze">Snooze %d min</string>
+    <string name="notif_action_dismiss">Dismiss</string>
 
     <plurals name="snooze_repeats">
         <item quantity="one">%d repeat</item>

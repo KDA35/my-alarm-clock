@@ -4,6 +4,7 @@ import android.app.KeyguardManager
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.os.SystemClock
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
@@ -12,6 +13,9 @@ import androidx.activity.enableEdgeToEdge
 import com.myalarm.clock.ui.ringing.RingingScreen
 import com.myalarm.clock.util.AppLogger
 import dagger.hilt.android.AndroidEntryPoint
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -22,6 +26,8 @@ class AlarmRingingActivity : ComponentActivity() {
     companion object {
         const val EXTRA_ALARM_ID = "alarm_id"
         private const val TAG = "RingingUI"
+        private const val FIRE_TAG = "AlarmFire"
+        private val timeFormat = SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault())
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,6 +43,15 @@ class AlarmRingingActivity : ComponentActivity() {
         logger.i(
             TAG,
             "Activity created, alarmId=$alarmId, isLocked=${keyguardManager.isKeyguardLocked}, isDeviceSecure=${keyguardManager.isDeviceSecure}"
+        )
+
+        // Diagnostic: how long did it take from "alarm fired" to "activity actually shown"?
+        val fireAt = AlarmService.lastFireTimestampElapsed
+        val nowElapsed = SystemClock.elapsedRealtime()
+        val deltaMs = if (fireAt > 0) nowElapsed - fireAt else -1L
+        logger.i(
+            FIRE_TAG,
+            "Activity actually appeared at: ${timeFormat.format(Date())}; time from fire to UI: ${deltaMs}ms"
         )
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {

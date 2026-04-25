@@ -148,6 +148,11 @@
     <string name="onboarding_exact_subtitle">Чтобы будильник срабатывал секунда в секунду, а не плюс-минус несколько минут.</string>
     <string name="onboarding_fullscreen_title">Полноэкранные уведомления</string>
     <string name="onboarding_fullscreen_subtitle">Чтобы экран будильника появлялся даже на заблокированном телефоне. Также рекомендуется отключить оптимизацию батареи.</string>
+    <string name="onboarding_overlay_title">Поверх других приложений</string>
+    <string name="onboarding_overlay_subtitle">Резервный канал. На GrapheneOS и некоторых сборках Android системные полноэкранные уведомления для sideload-приложений ограничены — это разрешение даёт нам гарантированный способ показать экран будильника поверх locked screen.</string>
+
+    <string name="notif_action_snooze">Отложить %d мин</string>
+    <string name="notif_action_dismiss">Отключить</string>
 
     <plurals name="snooze_repeats">
         <item quantity="one">%d повтор</item>
