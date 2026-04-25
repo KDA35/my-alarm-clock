@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.myalarm.clock.alarm.AlarmScheduler
 import com.myalarm.clock.data.Alarm
+import com.myalarm.clock.data.AlarmGroup
 import com.myalarm.clock.data.AlarmRepository
 import com.myalarm.clock.data.DayOfWeekMask
 import com.myalarm.clock.util.AppLogger
@@ -23,6 +24,16 @@ data class NextTriggerInfo(
     val deltaText: String
 )
 
+data class GroupedAlarms(
+    val groups: List<GroupSection>,
+    val ungrouped: List<Alarm>
+)
+
+data class GroupSection(
+    val group: AlarmGroup,
+    val alarms: List<Alarm>
+)
+
 @HiltViewModel
 class AlarmListViewModel @Inject constructor(
     private val repository: AlarmRepository,
@@ -32,6 +43,20 @@ class AlarmListViewModel @Inject constructor(
 
     val alarms: StateFlow<List<Alarm>> = repository.observeAll()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val groups: StateFlow<List<AlarmGroup>> = repository.observeGroups()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val grouped: StateFlow<GroupedAlarms> =
+        combine(alarms, groups) { allAlarms, allGroups ->
+            val byGroup = allAlarms.groupBy { it.groupId }
+            val sections = allGroups.map { g -> GroupSection(g, byGroup[g.id].orEmpty()) }
+            GroupedAlarms(sections, byGroup[null].orEmpty())
+        }.stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5_000),
+            GroupedAlarms(emptyList(), emptyList())
+        )
 
     val nextTriggerInfo: StateFlow<NextTriggerInfo?> =
         combine(alarms, tickerFlow(60_000L)) { list, _ ->
@@ -65,6 +90,20 @@ class AlarmListViewModel @Inject constructor(
         }
     }
 
+    fun toggleGroup(groupId: Long, enabled: Boolean) {
+        viewModelScope.launch { repository.toggleGroupEnabled(groupId, enabled) }
+    }
+
+    fun renameGroup(groupId: Long, newName: String) {
+        viewModelScope.launch {
+            if (newName.isNotBlank()) repository.renameGroup(groupId, newName.trim())
+        }
+    }
+
+    fun deleteGroup(group: AlarmGroup) {
+        viewModelScope.launch { repository.deleteGroup(group) }
+    }
+
     private fun computeNextTriggerInfo(list: List<Alarm>): NextTriggerInfo? {
         val now = System.currentTimeMillis()
         val nextTrigger = list
@@ -84,11 +123,7 @@ class AlarmListViewModel @Inject constructor(
         val totalMinutes = deltaMs / 60_000L
         val hours = totalMinutes / 60
         val minutes = totalMinutes % 60
-        return if (hours == 0L) {
-            "через $minutes мин"
-        } else {
-            "через $hours ч $minutes мин"
-        }
+        return if (hours == 0L) "через $minutes мин" else "через $hours ч $minutes мин"
     }
 
     private fun tickerFlow(periodMs: Long) = flow {

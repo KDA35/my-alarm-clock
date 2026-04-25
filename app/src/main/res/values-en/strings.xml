@@ -114,4 +114,43 @@
     <string name="edit_delete_button">Delete alarm</string>
     <string name="edit_delete_dialog_title">Delete alarm?</string>
     <string name="edit_delete_confirm">Delete</string>
+
+    <string name="edit_group_title">Group</string>
+    <string name="edit_group_none">No group</string>
+    <string name="edit_group_create_new">+ Create new group…</string>
+    <string name="edit_group_name_hint">For example, "Morning"</string>
+
+    <string name="edit_vibration_pattern_short">Short</string>
+    <string name="edit_vibration_pattern_long">Long</string>
+    <string name="edit_vibration_pattern_double">Double tap</string>
+
+    <string name="group_rename">Rename group</string>
+    <string name="group_delete">Delete group</string>
+    <string name="group_ungrouped">No group</string>
+    <string name="group_delete_dialog_title">Delete group?</string>
+    <string name="group_delete_dialog_body">Alarms in "%1$s" will stay but become ungrouped.</string>
+
+    <string name="widget_label">NEXT ALARM</string>
+    <string name="widget_no_alarms">No active alarms</string>
+    <string name="widget_no_label">Alarm</string>
+
+    <string name="menu_onboarding">Show tutorial again</string>
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_done">Done</string>
+    <string name="onboarding_open_settings">Open settings</string>
+    <string name="onboarding_battery_settings">Open battery settings</string>
+    <string name="onboarding_welcome_title">Welcome to MyAlarm</string>
+    <string name="onboarding_welcome_subtitle">A Samsung-style alarm with 10–60 minute snooze you can adjust right while it rings.</string>
+    <string name="onboarding_notif_title">Allow notifications</string>
+    <string name="onboarding_notif_subtitle">Without this the app cannot wake you up.</string>
+    <string name="onboarding_exact_title">Allow exact alarms</string>
+    <string name="onboarding_exact_subtitle">So the alarm fires exactly on time, not plus-or-minus several minutes.</string>
+    <string name="onboarding_fullscreen_title">Full-screen notifications</string>
+    <string name="onboarding_fullscreen_subtitle">So the alarm screen shows up even on a locked phone. Disabling battery optimization is also recommended.</string>
+
+    <plurals name="snooze_repeats">
+        <item quantity="one">%d repeat</item>
+        <item quantity="other">%d repeats</item>
+    </plurals>
 </resources>

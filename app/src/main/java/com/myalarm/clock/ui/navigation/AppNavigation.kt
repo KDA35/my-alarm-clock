@@ -18,14 +18,15 @@ private object Routes {
 }
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(onShowOnboarding: () -> Unit = {}) {
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = Routes.ALARM_LIST) {
         composable(Routes.ALARM_LIST) {
             AlarmListScreen(
                 onOpenLogs = { navController.navigate(Routes.LOGS) },
                 onCreateAlarm = { navController.navigate(Routes.edit(-1L)) },
-                onEditAlarm = { id -> navController.navigate(Routes.edit(id)) }
+                onEditAlarm = { id -> navController.navigate(Routes.edit(id)) },
+                onShowOnboarding = onShowOnboarding
             )
         }
         composable(Routes.LOGS) {

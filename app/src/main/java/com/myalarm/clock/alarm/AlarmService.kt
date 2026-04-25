@@ -9,17 +9,19 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.media.AudioAttributes
+import android.media.AudioManager
 import android.media.Ringtone
 import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import androidx.core.app.NotificationCompat
-import androidx.core.net.toUri
 import com.myalarm.clock.R
 import com.myalarm.clock.data.AlarmRepository
+import com.myalarm.clock.data.VibrationPattern
 import com.myalarm.clock.util.AppLogger
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -37,6 +39,7 @@ class AlarmService : Service() {
 
     private var ringtone: Ringtone? = null
     private var vibrator: Vibrator? = null
+    private var previousAlarmVolume: Int = -1
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     companion object {
@@ -46,14 +49,27 @@ class AlarmService : Service() {
         const val CHANNEL_ID = "alarm_channel"
         const val NOTIFICATION_ID = 1001
         private const val TAG = "Service"
+
+        @Volatile
+        private var currentlyRingingAlarmId: Long? = null
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val alarmId = intent?.getLongExtra(EXTRA_ALARM_ID, -1L) ?: -1L
         logger.i(TAG, "Service onStartCommand action=${intent?.action} alarmId=$alarmId")
         when (intent?.action) {
-            ACTION_START -> startAlarm(alarmId)
-            ACTION_STOP -> stopSelfCleanly()
+            ACTION_START -> {
+                if (currentlyRingingAlarmId == alarmId && alarmId != -1L) {
+                    logger.w(TAG, "Alarm id=$alarmId already ringing, ignoring duplicate start")
+                    return START_NOT_STICKY
+                }
+                currentlyRingingAlarmId = alarmId
+                startAlarm(alarmId)
+            }
+            ACTION_STOP -> {
+                currentlyRingingAlarmId = null
+                stopSelfCleanly()
+            }
         }
         return START_NOT_STICKY
     }
@@ -89,8 +105,14 @@ class AlarmService : Service() {
                 val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                 nm.notify(NOTIFICATION_ID, buildNotification(alarmId, alarm.label))
             }
-            playSound(alarm.ringtoneUri)
-            if (alarm.vibrationEnabled) startVibration()
+            if (alarm.volume > 0) {
+                playSound(alarm.ringtoneUri, alarm.volume)
+            } else {
+                logger.i(TAG, "Volume is 0 — sound suppressed")
+            }
+            if (alarm.vibrationEnabled) {
+                startVibration(alarm.vibrationPattern)
+            }
         }
     }
 
@@ -120,16 +142,41 @@ class AlarmService : Service() {
             .build()
     }
 
-    private fun playSound(uriString: String?) {
-        logger.d(TAG, "Preparing to play sound, uri=$uriString")
-        val uri = uriString?.toUri()
-            ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+    private fun playSound(uriString: String?, volume: Int) {
+        logger.d(TAG, "Preparing to play sound, uri=$uriString volume=$volume/10")
+        applyAlarmStreamVolume(volume)
+
+        val parsedUri = try {
+            uriString?.let { Uri.parse(it) }
+                ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+        } catch (e: Exception) {
+            logger.e(TAG, "Invalid ringtone URI: $uriString", e)
+            RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+        }
+
+        var r: Ringtone? = try {
+            RingtoneManager.getRingtone(this, parsedUri)
+        } catch (e: Exception) {
+            logger.e(TAG, "Failed to get ringtone for $parsedUri", e)
+            null
+        }
+
+        if (r == null) {
+            logger.w(TAG, "Falling back to default alarm sound")
+            r = runCatching {
+                RingtoneManager.getRingtone(
+                    this,
+                    RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                )
+            }.getOrNull()
+        }
+
+        if (r == null) {
+            logger.e(TAG, "Could not obtain any ringtone, no sound will play")
+            return
+        }
+
         try {
-            val r = RingtoneManager.getRingtone(this, uri)
-            if (r == null) {
-                logger.e(TAG, "Failed to obtain ringtone for uri=$uriString")
-                return
-            }
             r.audioAttributes = AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_ALARM)
                 .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
@@ -143,7 +190,32 @@ class AlarmService : Service() {
         }
     }
 
-    private fun startVibration() {
+    private fun applyAlarmStreamVolume(volume: Int) {
+        try {
+            val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM)
+            previousAlarmVolume = audioManager.getStreamVolume(AudioManager.STREAM_ALARM)
+            val target = (maxVolume * volume / 10).coerceIn(0, maxVolume)
+            audioManager.setStreamVolume(AudioManager.STREAM_ALARM, target, 0)
+            logger.d(TAG, "Set STREAM_ALARM volume to $target/$maxVolume (was $previousAlarmVolume)")
+        } catch (e: Exception) {
+            logger.e(TAG, "Failed to adjust alarm stream volume", e)
+        }
+    }
+
+    private fun restoreAlarmStreamVolume() {
+        if (previousAlarmVolume < 0) return
+        try {
+            val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            audioManager.setStreamVolume(AudioManager.STREAM_ALARM, previousAlarmVolume, 0)
+        } catch (e: Exception) {
+            logger.w(TAG, "Failed to restore alarm stream volume: ${e.message}")
+        } finally {
+            previousAlarmVolume = -1
+        }
+    }
+
+    private fun startVibration(patternName: String) {
         try {
             val vib = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 (getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager).defaultVibrator
@@ -152,10 +224,9 @@ class AlarmService : Service() {
                 getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
             }
             vibrator = vib.apply {
-                val pattern = longArrayOf(0, 1000, 1000)
-                vibrate(VibrationEffect.createWaveform(pattern, 0))
+                vibrate(VibrationEffect.createWaveform(VibrationPattern.toLongArray(patternName), 0))
             }
-            logger.d(TAG, "Vibration started with pattern")
+            logger.d(TAG, "Vibration started: pattern=$patternName")
         } catch (e: Exception) {
             logger.e(TAG, "Failed to start vibration", e)
         }
@@ -167,6 +238,8 @@ class AlarmService : Service() {
         ringtone = null
         vibrator?.cancel()
         vibrator = null
+        restoreAlarmStreamVolume()
+        currentlyRingingAlarmId = null
         serviceScope.cancel()
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
@@ -191,6 +264,7 @@ class AlarmService : Service() {
     override fun onDestroy() {
         ringtone?.stop()
         vibrator?.cancel()
+        restoreAlarmStreamVolume()
         super.onDestroy()
     }
 

@@ -114,4 +114,45 @@
     <string name="edit_delete_button">Удалить будильник</string>
     <string name="edit_delete_dialog_title">Удалить будильник?</string>
     <string name="edit_delete_confirm">Удалить</string>
+
+    <string name="edit_group_title">Группа</string>
+    <string name="edit_group_none">Без группы</string>
+    <string name="edit_group_create_new">+ Создать новую группу…</string>
+    <string name="edit_group_name_hint">Например, «Утро»</string>
+
+    <string name="edit_vibration_pattern_short">Короткая</string>
+    <string name="edit_vibration_pattern_long">Длинная</string>
+    <string name="edit_vibration_pattern_double">Двойной щелчок</string>
+
+    <string name="group_rename">Переименовать группу</string>
+    <string name="group_delete">Удалить группу</string>
+    <string name="group_ungrouped">Без группы</string>
+    <string name="group_delete_dialog_title">Удалить группу?</string>
+    <string name="group_delete_dialog_body">Будильники в группе «%1$s» останутся, но станут без группы.</string>
+
+    <string name="widget_label">СЛЕДУЮЩИЙ БУДИЛЬНИК</string>
+    <string name="widget_no_alarms">Нет активных будильников</string>
+    <string name="widget_no_label">Будильник</string>
+
+    <string name="menu_onboarding">Показать туториал ещё раз</string>
+    <string name="onboarding_skip">Пропустить</string>
+    <string name="onboarding_next">Далее</string>
+    <string name="onboarding_done">Готово</string>
+    <string name="onboarding_open_settings">Открыть настройки</string>
+    <string name="onboarding_battery_settings">Открыть настройки батареи</string>
+    <string name="onboarding_welcome_title">Добро пожаловать в MyAlarm</string>
+    <string name="onboarding_welcome_subtitle">Будильник, как у Samsung — с регулировкой snooze 10–60 минут прямо во время звонка.</string>
+    <string name="onboarding_notif_title">Разрешите уведомления</string>
+    <string name="onboarding_notif_subtitle">Без этого приложение не сможет вас разбудить.</string>
+    <string name="onboarding_exact_title">Разрешите точные будильники</string>
+    <string name="onboarding_exact_subtitle">Чтобы будильник срабатывал секунда в секунду, а не плюс-минус несколько минут.</string>
+    <string name="onboarding_fullscreen_title">Полноэкранные уведомления</string>
+    <string name="onboarding_fullscreen_subtitle">Чтобы экран будильника появлялся даже на заблокированном телефоне. Также рекомендуется отключить оптимизацию батареи.</string>
+
+    <plurals name="snooze_repeats">
+        <item quantity="one">%d повтор</item>
+        <item quantity="few">%d повтора</item>
+        <item quantity="many">%d повторов</item>
+        <item quantity="other">%d повтора</item>
+    </plurals>
 </resources>

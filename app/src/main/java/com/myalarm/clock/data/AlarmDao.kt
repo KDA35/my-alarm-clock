@@ -19,6 +19,9 @@ interface AlarmDao {
     @Query("SELECT * FROM alarms WHERE enabled = 1")
     suspend fun getAllEnabled(): List<Alarm>
 
+    @Query("SELECT * FROM alarms WHERE groupId = :groupId")
+    suspend fun getByGroupId(groupId: Long): List<Alarm>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(alarm: Alarm): Long
 
@@ -30,4 +33,7 @@ interface AlarmDao {
 
     @Query("UPDATE alarms SET enabled = :enabled WHERE id = :id")
     suspend fun setEnabled(id: Long, enabled: Boolean)
+
+    @Query("UPDATE alarms SET enabled = :enabled WHERE groupId = :groupId")
+    suspend fun setEnabledForGroup(groupId: Long, enabled: Boolean)
 }

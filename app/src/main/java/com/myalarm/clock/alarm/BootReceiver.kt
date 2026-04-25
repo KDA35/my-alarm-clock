@@ -19,15 +19,19 @@ class BootReceiver : BroadcastReceiver() {
 
     companion object {
         private const val TAG = "Boot"
+        private val HANDLED_ACTIONS = setOf(
+            Intent.ACTION_BOOT_COMPLETED,
+            Intent.ACTION_LOCKED_BOOT_COMPLETED,
+            Intent.ACTION_MY_PACKAGE_REPLACED,
+            Intent.ACTION_TIME_CHANGED,
+            Intent.ACTION_TIMEZONE_CHANGED
+        )
     }
 
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action ?: return
-        if (action != Intent.ACTION_BOOT_COMPLETED &&
-            action != Intent.ACTION_LOCKED_BOOT_COMPLETED &&
-            action != Intent.ACTION_MY_PACKAGE_REPLACED
-        ) return
-        logger.i(TAG, "Boot completed event received, action=$action")
+        if (action !in HANDLED_ACTIONS) return
+        logger.i(TAG, "Reschedule trigger received, action=$action")
 
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
@@ -36,7 +40,7 @@ class BootReceiver : BroadcastReceiver() {
                 val count = repository.rescheduleAll()
                 logger.i(TAG, "Rescheduling complete: $count alarms")
             } catch (e: Exception) {
-                logger.e(TAG, "Failed to reschedule alarms after boot", e)
+                logger.e(TAG, "Failed to reschedule alarms", e)
             } finally {
                 pendingResult.finish()
             }
