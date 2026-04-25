@@ -3,7 +3,6 @@ package com.myalarm.clock.alarm
 import android.app.KeyguardManager
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -31,14 +30,14 @@ class AlarmRingingActivity : ComponentActivity() {
 
         setShowWhenLocked(true)
         setTurnScreenOn(true)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-            val km = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
-            km.requestDismissKeyguard(this, null)
-        }
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         val alarmId = intent.getLongExtra(EXTRA_ALARM_ID, -1L)
-        logger.i(TAG, "Activity created, alarmId=$alarmId, isLocked=${isKeyguardLocked()}")
+        val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+        logger.i(
+            TAG,
+            "Activity created, alarmId=$alarmId, isLocked=${keyguardManager.isKeyguardLocked}, isDeviceSecure=${keyguardManager.isDeviceSecure}"
+        )
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -55,9 +54,6 @@ class AlarmRingingActivity : ComponentActivity() {
             )
         }
     }
-
-    private fun isKeyguardLocked(): Boolean =
-        (getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager).isKeyguardLocked
 
     private fun handleClose() {
         stopAlarmService()

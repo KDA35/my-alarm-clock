@@ -61,38 +61,16 @@ class AlarmService : Service() {
     private fun startAlarm(alarmId: Long) {
         createNotificationChannel()
 
-        val fullScreenIntent = Intent(this, AlarmRingingActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra(AlarmRingingActivity.EXTRA_ALARM_ID, alarmId)
-        }
-        val fullScreenPi = PendingIntent.getActivity(
-            this,
-            alarmId.toInt(),
-            fullScreenIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle(getString(R.string.alarm_ringing_title))
-            .setContentText(getString(R.string.alarm_ringing_text))
-            .setPriority(NotificationCompat.PRIORITY_MAX)
-            .setCategory(NotificationCompat.CATEGORY_ALARM)
-            .setFullScreenIntent(fullScreenPi, true)
-            .setOngoing(true)
-            .setAutoCancel(false)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .build()
-
+        val initialNotification = buildNotification(alarmId, label = null)
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 startForeground(
                     NOTIFICATION_ID,
-                    notification,
+                    initialNotification,
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
                 )
             } else {
-                startForeground(NOTIFICATION_ID, notification)
+                startForeground(NOTIFICATION_ID, initialNotification)
             }
             logger.i(TAG, "Foreground started, notification posted with full-screen intent")
         } catch (e: Exception) {
@@ -107,9 +85,39 @@ class AlarmService : Service() {
                 stopSelfCleanly()
                 return@launch
             }
+            if (alarm.label.isNotBlank()) {
+                val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                nm.notify(NOTIFICATION_ID, buildNotification(alarmId, alarm.label))
+            }
             playSound(alarm.ringtoneUri)
             if (alarm.vibrationEnabled) startVibration()
         }
+    }
+
+    private fun buildNotification(alarmId: Long, label: String?): Notification {
+        val fullScreenIntent = Intent(this, AlarmRingingActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(AlarmRingingActivity.EXTRA_ALARM_ID, alarmId)
+        }
+        val fullScreenPi = PendingIntent.getActivity(
+            this,
+            alarmId.toInt(),
+            fullScreenIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val contentText = label?.takeIf { it.isNotBlank() }
+            ?: getString(R.string.alarm_ringing_text)
+        return NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle(getString(R.string.alarm_ringing_title))
+            .setContentText(contentText)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setFullScreenIntent(fullScreenPi, true)
+            .setOngoing(true)
+            .setAutoCancel(false)
+            .build()
     }
 
     private fun playSound(uriString: String?) {
@@ -174,6 +182,7 @@ class AlarmService : Service() {
             setSound(null, null)
             enableVibration(false)
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+            setBypassDnd(true)
         }
         (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
             .createNotificationChannel(channel)
