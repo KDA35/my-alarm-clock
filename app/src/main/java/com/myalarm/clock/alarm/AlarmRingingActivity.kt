@@ -7,42 +7,17 @@ import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.lifecycle.lifecycleScope
-import com.myalarm.clock.data.AlarmRepository
-import com.myalarm.clock.ui.theme.MyAlarmTheme
+import androidx.activity.enableEdgeToEdge
+import com.myalarm.clock.ui.ringing.RingingScreen
 import com.myalarm.clock.util.AppLogger
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class AlarmRingingActivity : ComponentActivity() {
 
-    @Inject lateinit var repository: AlarmRepository
-    @Inject lateinit var scheduler: AlarmScheduler
     @Inject lateinit var logger: AppLogger
 
     companion object {
@@ -50,10 +25,9 @@ class AlarmRingingActivity : ComponentActivity() {
         private const val TAG = "RingingUI"
     }
 
-    private var alarmId: Long = -1L
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
 
         setShowWhenLocked(true)
         setTurnScreenOn(true)
@@ -63,38 +37,29 @@ class AlarmRingingActivity : ComponentActivity() {
         }
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
-        alarmId = intent.getLongExtra(EXTRA_ALARM_ID, -1L)
-        logger.i(
-            TAG,
-            "Ringing activity created, alarmId=$alarmId, isLocked=${isKeyguardLocked()}"
-        )
+        val alarmId = intent.getLongExtra(EXTRA_ALARM_ID, -1L)
+        logger.i(TAG, "Activity created, alarmId=$alarmId, isLocked=${isKeyguardLocked()}")
+
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                logger.d(TAG, "Back press blocked")
+            }
+        })
 
         setContent {
-            MyAlarmTheme {
-                RingingScreen(
-                    alarmId = alarmId,
-                    onSnooze = { minutes -> doSnooze(minutes) },
-                    onDismiss = { doDismiss() }
-                )
-            }
+            RingingScreen(
+                onSnooze = { _ -> handleClose() },
+                onPostpone = { _ -> handleClose() },
+                onPostponeUntil = { _, _ -> handleClose() },
+                onDismiss = { handleClose() }
+            )
         }
     }
 
     private fun isKeyguardLocked(): Boolean =
         (getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager).isKeyguardLocked
 
-    private fun doSnooze(minutes: Int) {
-        logger.i(TAG, "User snoozed alarm id=$alarmId for $minutes minutes")
-        lifecycleScope.launch {
-            val alarm = repository.getById(alarmId) ?: return@launch
-            scheduler.scheduleSnooze(alarm, minutes)
-            stopAlarmService()
-            finish()
-        }
-    }
-
-    private fun doDismiss() {
-        logger.i(TAG, "User dismissed alarm id=$alarmId")
+    private fun handleClose() {
         stopAlarmService()
         finish()
     }
@@ -104,50 +69,5 @@ class AlarmRingingActivity : ComponentActivity() {
             action = AlarmService.ACTION_STOP
         }
         startService(intent)
-    }
-}
-
-@Composable
-private fun RingingScreen(
-    alarmId: Long,
-    onSnooze: (Int) -> Unit,
-    onDismiss: () -> Unit
-) {
-    var snoozeMinutes by remember { mutableIntStateOf(10) }
-
-    Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text("Будильник", color = Color.White, fontSize = 18.sp)
-            Spacer(Modifier.height(16.dp))
-            Text(
-                "ID: $alarmId",
-                color = Color.White.copy(alpha = 0.7f),
-                fontSize = 14.sp
-            )
-            Spacer(Modifier.height(32.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Button(onClick = { if (snoozeMinutes > 1) snoozeMinutes-- }) { Text("−") }
-                Spacer(Modifier.width(16.dp))
-                Text("$snoozeMinutes мин", color = Color.White, fontSize = 24.sp)
-                Spacer(Modifier.width(16.dp))
-                Button(onClick = { if (snoozeMinutes < 60) snoozeMinutes++ }) { Text("+") }
-            }
-            Spacer(Modifier.height(32.dp))
-
-            Button(onClick = { onSnooze(snoozeMinutes) }) {
-                Text("Отложить на $snoozeMinutes мин")
-            }
-            Spacer(Modifier.height(16.dp))
-            OutlinedButton(onClick = onDismiss) {
-                Text("Отключить", color = Color.White)
-            }
-        }
     }
 }
