@@ -2,19 +2,61 @@
 <resources>
     <string name="app_name">MyAlarm</string>
     <string name="stage_1_placeholder">Stage 1: skeleton works</string>
+
     <string name="alarm_ringing_title">Alarm</string>
     <string name="alarm_ringing_text">Tap to open</string>
     <string name="alarm_channel_name">Alarm</string>
     <string name="alarm_channel_description">Alarm trigger notifications</string>
+
     <string name="permission_exact_alarms">Exact alarms</string>
     <string name="permission_notifications">Notifications</string>
+    <string name="permission_full_screen">Full-screen notifications</string>
     <string name="permission_granted">granted</string>
     <string name="permission_denied">NOT granted</string>
     <string name="permission_grant">Grant</string>
+    <string name="permission_grant_button">Grant</string>
+    <string name="permission_banner_title">Some permissions are missing</string>
+
     <string name="refresh">Refresh</string>
-    <string name="test_alarm_30sec">Test: alarm in 30 seconds</string>
-    <string name="snooze_for_minutes">Snooze %d min</string>
     <string name="dismiss">Dismiss</string>
-    <string name="alarms_list_header">Alarms list</string>
+    <string name="snooze_for_minutes">Snooze %d min</string>
     <string name="delete">Delete</string>
+
+    <string name="alarm_list_title">Alarm</string>
+    <string name="alarm_list_empty_title">No alarms</string>
+    <string name="alarm_list_empty_subtitle">Tap + to create one</string>
+    <string name="alarm_list_test_button">🧪 Test in 30 seconds</string>
+    <string name="alarm_list_test_scheduled">Alarm scheduled</string>
+    <string name="alarm_list_next">Next: %1$s — %2$s</string>
+    <string name="alarm_list_next_now">Next: now</string>
+    <string name="alarm_list_delta_minutes">in %d min</string>
+    <string name="alarm_list_delta_hours">in %1$d h %2$d min</string>
+    <string name="alarm_list_delete_title">Delete alarm?</string>
+    <string name="alarm_list_delete_confirm">Delete</string>
+    <string name="alarm_list_cancel">Cancel</string>
+    <string name="alarm_list_edit_stub">Editing — stage 5</string>
+    <string name="alarm_list_create_stub">Creating — stage 5</string>
+
+    <string name="day_mon_short">Mon</string>
+    <string name="day_tue_short">Tue</string>
+    <string name="day_wed_short">Wed</string>
+    <string name="day_thu_short">Thu</string>
+    <string name="day_fri_short">Fri</string>
+    <string name="day_sat_short">Sat</string>
+    <string name="day_sun_short">Sun</string>
+    <string name="days_every_day">Every day</string>
+    <string name="days_weekdays">Weekdays</string>
+    <string name="days_weekends">Weekends</string>
+    <string name="days_one_shot">One-shot</string>
+
+    <string name="menu_logs">Logs</string>
+    <string name="logs_title">Logs</string>
+    <string name="logs_clear_title">Clear logs?</string>
+    <string name="logs_clear_confirm">Clear</string>
+    <string name="logs_share">Share</string>
+    <string name="logs_share_subject">MyAlarm logs</string>
+    <string name="logs_share_chooser">Share logs</string>
+
+    <string name="alarms_list_header">Alarms list</string>
+    <string name="test_alarm_30sec">Test: alarm in 30 seconds</string>
 </resources>
