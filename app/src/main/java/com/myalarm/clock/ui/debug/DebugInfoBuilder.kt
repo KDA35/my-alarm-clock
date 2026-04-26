@@ -22,7 +22,7 @@ import java.util.Locale
 object DebugInfoBuilder {
 
     fun deviceInfo(context: Context): Map<String, String> {
-        val rom = detectRom()
+        val rom = detectRom(context)
         return linkedMapOf(
             "Manufacturer" to Build.MANUFACTURER,
             "Model" to Build.MODEL,
@@ -33,16 +33,31 @@ object DebugInfoBuilder {
         )
     }
 
-    private fun detectRom(): String {
+    private fun detectRom(context: Context): String {
+        // Check Build markers first (works on most ROMs but GrapheneOS deliberately keeps stock-like markers).
         val markers = listOf(Build.HOST, Build.FINGERPRINT, Build.PRODUCT, Build.DISPLAY)
             .joinToString(" ").lowercase()
-        return when {
-            "graphene" in markers -> "GrapheneOS"
-            "calyx" in markers -> "CalyxOS"
-            "lineage" in markers -> "LineageOS"
-            else -> Build.HOST
+        when {
+            "graphene" in markers -> return "GrapheneOS"
+            "calyx" in markers -> return "CalyxOS"
+            "lineage" in markers -> return "LineageOS"
         }
+        // Fall back to checking for ROM-specific system packages.
+        val pm = context.packageManager
+        val grapheneMarkers = listOf(
+            "app.grapheneos.networklocation",
+            "app.grapheneos.apps",
+            "app.grapheneos.camera",
+            "app.grapheneos.pdfviewer"
+        )
+        if (grapheneMarkers.any { pkg -> packageExists(pm, pkg) }) return "GrapheneOS"
+        if (packageExists(pm, "org.calyxos.lupin")) return "CalyxOS"
+        if (packageExists(pm, "lineageos.platform")) return "LineageOS"
+        return Build.HOST
     }
+
+    private fun packageExists(pm: android.content.pm.PackageManager, pkg: String): Boolean =
+        runCatching { pm.getPackageInfo(pkg, 0); true }.getOrDefault(false)
 
     data class PermissionRow(
         val name: String,
