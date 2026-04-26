@@ -62,6 +62,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -476,10 +477,14 @@ private fun TimeWheelSection(
             )
             Text(
                 ":",
-                fontSize = 64.sp,
+                fontSize = 52.sp,
+                lineHeight = 52.sp,
                 fontWeight = FontWeight.Light,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(horizontal = 4.dp)
+                modifier = Modifier.padding(horizontal = 4.dp),
+                style = TextStyle(
+                    platformStyle = PlatformTextStyle(includeFontPadding = false)
+                )
             )
             WheelNumberPicker(
                 value = minute,
@@ -497,7 +502,7 @@ private fun TimeWheelSection(
     }
 }
 
-private val ItemHeight: Dp = 40.dp
+private val ItemHeight: Dp = 64.dp
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -549,9 +554,9 @@ private fun WheelNumberPicker(
             items(range.toList()) { item ->
                 val distance = abs(item - value)
                 val (fontSize, alpha) = when (distance) {
-                    0 -> 64.sp to 1f
-                    1 -> 18.sp to 0.5f
-                    2 -> 14.sp to 0.25f
+                    0 -> 52.sp to 1f
+                    1 -> 22.sp to 0.5f
+                    2 -> 16.sp to 0.25f
                     else -> 14.sp to 0f
                 }
                 val color = if (distance == 0)
@@ -567,8 +572,12 @@ private fun WheelNumberPicker(
                     Text(
                         text = "%02d".format(item),
                         fontSize = fontSize,
+                        lineHeight = fontSize,
                         fontWeight = if (distance == 0) FontWeight.Light else FontWeight.Normal,
-                        color = color
+                        color = color,
+                        style = TextStyle(
+                            platformStyle = PlatformTextStyle(includeFontPadding = false)
+                        )
                     )
                 }
             }

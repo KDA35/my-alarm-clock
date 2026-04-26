@@ -13,6 +13,7 @@ import com.myalarm.clock.ui.onboarding.OnboardingPrefs
 import com.myalarm.clock.ui.onboarding.OnboardingScreen
 import com.myalarm.clock.ui.theme.MyAlarmTheme
 import com.myalarm.clock.util.AppLogger
+import com.myalarm.clock.util.NotificationChannels
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -26,6 +27,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         logger.i("Main", "App started, version=${BuildConfig.VERSION_NAME}")
+        NotificationChannels.ensureAlarmChannel(applicationContext, logger)
         setContent {
             MyAlarmTheme {
                 var showOnboarding by remember { mutableStateOf(!onboardingPrefs.completed) }
